@@ -30,8 +30,10 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<!-- Dependency versions -->
 		<bouncycastle.version>1.45</bouncycastle.version>
-		<jscep.version>1.0.0</jscep.version>
+		<jscep.version>1.1.2</jscep.version>
 		<testng.version>5.10</testng.version>
+		<jetty.version>7.1.6.v20100715</jetty.version>
+		<mockito.version>1.8.5</mockito.version>
 	</properties>
 	
 	<dependencies>
@@ -46,6 +48,32 @@
 			<version>${testng.version}</version>
 			<scope>test</scope>
 			<classifier>jdk15</classifier>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.jscep</groupId>
+			<artifactId>server</artifactId>
+			<version>${jscep.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.jscep</groupId>
+			<artifactId>client</artifactId>
+			<version>${jscep.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-server</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-servlet</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>${mockito.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	

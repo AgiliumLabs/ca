@@ -71,11 +71,9 @@ public interface CAClient {
 	 * 
 	 * @return a DER-encoded PKCS#10 CSR
 	 * 
-	 * @throws DuplicateSubjectException in case the certificate with the given
-	 * subject name is signed already
 	 * @throws CAException
 	 */
-	public byte[] generateCSR(String subjectDN) throws DuplicateSubjectException, CAException;
+	public byte[] generateCSR(String subjectDN) throws CAException;
 	
 	/**
 	 * Given subject name, returns a keypair generated in generateCSR method. In

@@ -1,2 +1,3 @@
 # Exclude compiled artifacts
 target/
+test-output/

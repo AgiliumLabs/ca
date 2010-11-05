@@ -21,10 +21,7 @@ import static org.testng.AssertJUnit.assertFalse;
 import static org.testng.AssertJUnit.assertTrue;
 import static org.testng.AssertJUnit.fail;
 
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.cert.X509Certificate;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -88,11 +85,15 @@ public abstract class CAClientTest {
 	}
 
 	@Test
-	public void testGenerateCSRForExistingKeypair() throws DuplicateSubjectException, CAException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
+	public void testGenerateCSRForExistingKeypair() throws Exception {
 		// Given CSR is generated for 'CN=test,UID=test@test' subject name
 		byte[] csr = client().generateCSR(SUBJECT_NAME);
 		KeyPair keypair = client().getKeypair(SUBJECT_NAME);
 		X509Certificate certificate = client().getCertificate(SUBJECT_NAME);
+		assertDuplicateCsrInvocation(csr, keypair, certificate);
+	}
+	
+	private void assertDuplicateCsrInvocation(byte[] csr, KeyPair keypair, X509Certificate certificate) throws Exception {
 		// When generateCSR('CN=test,UID=test@test') is invoked
 		byte[] newCsr = client().generateCSR(SUBJECT_NAME);
 		// Then a new CSR is generated for the subject name using the keypair generated earlier
@@ -108,21 +109,16 @@ public abstract class CAClientTest {
 		X509Certificate newCertificate = client().getCertificate(SUBJECT_NAME);
 		assertEquals(certificate, newCertificate);
 	}
-	
+
 	@Test
-	public void testGenerateCSRForSignedCertificate() throws DuplicateSubjectException, CAException {
+	public void testGenerateCSRForSignedCertificate() throws Exception {
 		// Given certificate is signed for 'CN=test,UID=test@test' subject name
 		byte[] csr = client().generateCSR(SUBJECT_NAME);
 		X509Certificate cert = ca().signCertificate(csr, false);
 		client().initialize(ca().getCACertificate());
 		client().storeCertificate(cert);
 		// When generateCSR('CN=test,UID=test@test') is invoked
-		try {
-			client().generateCSR(SUBJECT_NAME);
-			fail("DuplicateSubjectException expected");
-		} catch (DuplicateSubjectException e) {
-			// Then DuplicateSubjectException is thrown
-		}
+		assertDuplicateCsrInvocation(csr, client().getKeypair(SUBJECT_NAME), cert);
 	}
 	
 	@Test
@@ -137,7 +133,7 @@ public abstract class CAClientTest {
 	}
 	
 	@Test
-	public void testStoreCertificateCANotInitialized() throws CANotInitializedException, DuplicateSubjectException, CAException {
+	public void testStoreCertificateCANotInitialized() throws Exception {
 		// Given an uninitialized client
 		assertFalse(client().isInitialized());
 		// When a signed certificate stored
@@ -152,7 +148,7 @@ public abstract class CAClientTest {
 	}
 	
 	@Test
-	public void testStoreCertificateInvalidCertificateKey() throws DuplicateSubjectException, CAException {
+	public void testStoreCertificateInvalidCertificateKey() throws Exception {
 		byte[] wrongCsr = client().generateCSR(SUBJECT_NAME);
 		client().destroy();
 		// Given a CSR is generated for 'CN=test,UID=test@test' subject name 
@@ -170,7 +166,7 @@ public abstract class CAClientTest {
 	}
 	
 	@Test
-	public void testStoreCertificateInvalidCA() throws AlreadyInitializedException, CANotInitializedException, CAException {
+	public void testStoreCertificateInvalidCA() throws Exception {
 		// Given a CSR is generated for 'CN=test,UID=test@test' subject name
 		byte[] csr = client().generateCSR(SUBJECT_NAME);
 		// And client is initialized with CA certificate

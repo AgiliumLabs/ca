@@ -54,6 +54,7 @@ public abstract class CATest {
 		// And CA keypairs and certificates are generated
 		assertNotNull(ca().getCACertificate());
 		verifyCACertificates(minBeforeDate, maxBeforeDate);
+		assertNotNull(ca().getCAKeypair());
 		// And an empty CRL is generated
 		// TODO: CRL impl
 	}

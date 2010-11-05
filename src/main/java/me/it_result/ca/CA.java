@@ -16,6 +16,7 @@
  */
 package me.it_result.ca;
 
+import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
@@ -80,5 +81,15 @@ public interface CA {
 	 * @throws CAException
 	 */
 	public X509Certificate getCACertificate() throws CANotInitializedException, CAException;
+
+	/**
+	 * Provides an access to the CA keypair
+	 * 
+	 * @return the CA keypair
+	 * 
+	 * @throws CANotInitializedException in case CA is not initialized yet
+	 * @throws CAException
+	 */
+	public KeyPair getCAKeypair() throws CANotInitializedException, CAException;
 
 }

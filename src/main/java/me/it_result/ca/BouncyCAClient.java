@@ -97,19 +97,21 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 			KeyPair keyPair;
 			KeyStore keyStore = loadKeystore();
 			String alias = BouncyCAUtils.generateAlias(subjectDN);
+			boolean signed = false;
 			if (!keyStore.containsAlias(alias)) 
 				keyPair = generateKeyPair();
 			else {
 				keyPair = getKeypair(subjectDN);
 				X509Certificate existingCertificate = (X509Certificate) keyStore.getCertificate(alias);
-				if (!existingCertificate.getIssuerDN().equals(existingCertificate.getSubjectDN())) 
-					throw new DuplicateSubjectException("Certificate for " + subjectDN + " is signed already");
+				signed = !existingCertificate.getIssuerDN().equals(existingCertificate.getSubjectDN()); 
 			}
 			X509Certificate cert = assembleCertificate(keyPair.getPublic(), keyPair.getPublic(), subjectDN, subjectDN, new BigInteger("1"), false, selfSignedCertificateValidityDays).generate(keyPair.getPrivate());
 			PKCS10CertificationRequest csr = new PKCS10CertificationRequest(signatureAlgorithm, new X509Name(subjectDN), keyPair.getPublic(), null, keyPair.getPrivate());
 			byte[] csrBytes = csr.getEncoded();
-			keyStore.setKeyEntry(alias, keyPair.getPrivate(), keystorePassword.toCharArray(), new X509Certificate[] {cert});
-			saveKeystore(keyStore);
+			if (!signed) {
+				keyStore.setKeyEntry(alias, keyPair.getPrivate(), keystorePassword.toCharArray(), new X509Certificate[] {cert});
+				saveKeystore(keyStore);
+			}
 			return csrBytes;
 		} catch (DuplicateSubjectException e) {
 			throw new DuplicateSubjectException(e);

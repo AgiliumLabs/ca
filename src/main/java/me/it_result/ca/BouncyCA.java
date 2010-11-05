@@ -228,4 +228,18 @@ public class BouncyCA extends BouncyCABase implements CA {
 		}
 	}
 
+	@Override
+	public KeyPair getCAKeypair() throws CANotInitializedException, CAException {
+		ensureInitialized();
+		try {
+			KeyStore keyStore = loadKeystore();
+			PrivateKey caPrivateKey = (PrivateKey) keyStore.getKey(CA_ALIAS, keystorePassword.toCharArray());
+			X509Certificate caCertificate = (X509Certificate) keyStore.getCertificate(CA_ALIAS);
+			KeyPair keyPair = new KeyPair(caCertificate.getPublicKey(), caPrivateKey);
+			return keyPair;
+		} catch (Exception e) {
+			throw new CAException(e);
+		}
+	}
+
 }
