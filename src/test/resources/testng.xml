@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <suite name="BouncyCA Test Suite">
   <test name="RSA test">
     <parameter name="keyAlgorithm" value="RSA"/> 	
-    <parameter name="keyBits" value="4096"/> 	
-    <parameter name="bouncyCastleProviderSignatureAlgorithm" value="SHA512WithRSA"/> 	
-    <parameter name="jdkSignatureAlgorithm" value="SHA512withRSA"/> 	
+    <parameter name="keyBits" value="512"/> 	
+    <parameter name="bouncyCastleProviderSignatureAlgorithm" value="MD5WithRSA"/> 	
+    <parameter name="jdkSignatureAlgorithm" value="MD5withRSA"/> 	
     <packages>
        <package name="me.it_result.ca"/>
     </packages>
