@@ -90,6 +90,7 @@ public class ScepCAClient {
 	 */
 	public X509Certificate enrollCertificate(String subject, char[] scepPassword, int pendingRetryIntervalMs, int pendingTimeoutMs) throws CAException {
 		try {
+			ensureCertificateNotSignedYet(subject);
 			byte[] csr = caClient.generateCSR(subject);
 			// TODO: the certificate returned by the caClient is not always a self-signed one
 			X509Certificate identity = caClient.getCertificate(subject);
@@ -130,6 +131,12 @@ public class ScepCAClient {
 		} catch (Exception e) {
 			throw new CAException(e);
 		}
+	}
+
+	private void ensureCertificateNotSignedYet(String subject) throws CAException {
+		X509Certificate certificate = caClient.getCertificate(subject);
+		if (certificate != null && !certificate.getSubjectX500Principal().equals(certificate.getIssuerX500Principal()))
+			throw new DuplicateSubjectException("Certificate for " + subject + " is already signed");
 	}
 
 	private static class PollTask implements Callable<State> {

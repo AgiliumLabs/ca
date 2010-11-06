@@ -83,7 +83,7 @@ public class ScepCAClientTest {
 		String publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCXiXEvyufYtVkVbC3irPhSzyO9AGlC8CZcUwZ3gQeRoOMzTJqCAyiKCIAUK8BFNLMGNC91gvi5TvyayCh4DMTaqMLp0Wc0NbG7k9+ZmsOpCxkRVQXhe1fDLzcG0yfbZ8ONelSE4UxM/wVRkHcxMyLKVf4x0nbD3rbcoZCjhq2rEQIDAQAB";
 		String signedCertificate = "MIICCzCCAXSgAwIBAgIBAjANBgkqhkiG9w0BAQ0FADANMQswCQYDVQQDDAJDQTAgFw0xMDEwMTkxOTU2NTlaGA8yMTEwMDkyNTE5NTY1OVowETEPMA0GA1UEAwwGY2xpZW50MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCXiXEvyufYtVkVbC3irPhSzyO9AGlC8CZcUwZ3gQeRoOMzTJqCAyiKCIAUK8BFNLMGNC91gvi5TvyayCh4DMTaqMLp0Wc0NbG7k9+ZmsOpCxkRVQXhe1fDLzcG0yfbZ8ONelSE4UxM/wVRkHcxMyLKVf4x0nbD3rbcoZCjhq2rEQIDAQABo3UwczAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQU+O2CCCchblN9sY7vPRQFkSsFr44wHwYDVR0jBBgwFoAUWK0hBaNm694NpL4UcHj7cAtveRkwEwYDVR0lBAwwCgYIKwYBBQUHAwIwDQYJKoZIhvcNAQENBQADgYEARQxg8PkPVYlLZKXvelUSAUFDdspvx7Kf5V/AWxWQDkKdJaorfGwVBDFaceWcGYpI1BVzKgoPIjrLWICRraEYsiy1EZgzPjAztuk+lvlJFxLu2cT0beWsjdJqr0caVzPeTPNtmhHfQB6xv1WZ3RZt26bUnDbkLpx+gCiHuwmLJmI=";
 		try {
-			SCEP_URL = new URL("http://localhost/scep");
+			SCEP_URL = new URL("http://localhost/pkiclient.exe");
 			CA_CERTIFICATE = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(Base64.decode(caCert.getBytes("UTF-8"))));
 			CA_FINGERPRINT =  CertificateFingerprint.calculate(CA_CERTIFICATE);
 			SELF_SIGNED_CERTIFICATE = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(Base64.decode(selfSignedCert.getBytes("UTF-8"))));
@@ -154,7 +154,8 @@ public class ScepCAClientTest {
 	@Test
 	public void testEnrollmentOfEnrolledCertificate() throws Exception {
 		// When enrollCertificate is invoked for an already enrolled certificate
-		when(caClient.generateCSR(CLIENT_SUBJECT_DN)).thenThrow(new DuplicateSubjectException("Already enrolled"));
+		when(caClient.generateCSR(CLIENT_SUBJECT_DN)).thenReturn(CSR.getEncoded());
+		when(caClient.getCertificate(CLIENT_SUBJECT_DN)).thenReturn(SIGNED_CERTIFICATE);
 		// Then DuplicateSubjectException must be thrown
 		try {
 			scepCaClient.enrollCertificate(CLIENT_SUBJECT_DN, SCEP_PASSWORD, 1000, 1000);
