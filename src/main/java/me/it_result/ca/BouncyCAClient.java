@@ -97,18 +97,15 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 			KeyPair keyPair;
 			KeyStore keyStore = loadKeystore();
 			String alias = BouncyCAUtils.generateAlias(subjectDN);
-			boolean signed = false;
-			if (!keyStore.containsAlias(alias)) 
+			boolean containsAlias = keyStore.containsAlias(alias);
+			if (!containsAlias) 
 				keyPair = generateKeyPair();
-			else {
+			else 
 				keyPair = getKeypair(subjectDN);
-				X509Certificate existingCertificate = (X509Certificate) keyStore.getCertificate(alias);
-				signed = !existingCertificate.getIssuerDN().equals(existingCertificate.getSubjectDN()); 
-			}
 			X509Certificate cert = assembleCertificate(keyPair.getPublic(), keyPair.getPublic(), subjectDN, subjectDN, new BigInteger("1"), false, selfSignedCertificateValidityDays).generate(keyPair.getPrivate());
 			PKCS10CertificationRequest csr = new PKCS10CertificationRequest(signatureAlgorithm, new X509Name(subjectDN), keyPair.getPublic(), null, keyPair.getPrivate());
 			byte[] csrBytes = csr.getEncoded();
-			if (!signed) {
+			if (!containsAlias) {
 				keyStore.setKeyEntry(alias, keyPair.getPrivate(), keystorePassword.toCharArray(), new X509Certificate[] {cert});
 				saveKeystore(keyStore);
 			}

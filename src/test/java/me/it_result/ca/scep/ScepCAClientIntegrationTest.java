@@ -93,7 +93,7 @@ public class ScepCAClientIntegrationTest {
 
 	private void destroyCa(String keyAlgorithm, int keyBits,
 			String signatureAlgorithm) throws Exception {
-		CA ca = new BouncyCA(CA_KEYSTORE, "RSA", 1024, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", "MD5withRSA");
+		CA ca = new BouncyCA(CA_KEYSTORE, "RSA", keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", signatureAlgorithm);
 		ca.destroy();
 	}
 

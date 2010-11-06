@@ -55,7 +55,7 @@ public class BouncyCAClientTest extends CAClientTest {
 	@Parameters({"keyAlgorithm", "keyBits", "bouncyCastleProviderSignatureAlgorithm", "jdkSignatureAlgorithm"})
 	public void setUp(@Optional("RSA") String keyAlgorithm, @Optional("1024") int keyBits, @Optional("MD5WithRSA") String signatureAlgorithm, @Optional("MD5withRSA") String jdkSignatureAlgorithm) throws AlreadyInitializedException, CAException {
 		this.jdkSignatureAlgorithm = jdkSignatureAlgorithm;
-		ca = new BouncyCA(CA_KEYSTORE, "RSA", 1024, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", "MD5withRSA");
+		ca = new BouncyCA(CA_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", jdkSignatureAlgorithm);
 		client = new BouncyCAClient(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm);
 		client.destroy();
 		ca.destroy();
