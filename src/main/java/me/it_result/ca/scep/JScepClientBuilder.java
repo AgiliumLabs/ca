@@ -40,8 +40,9 @@ public class JScepClientBuilder {
 	private URL url;
 	private CallbackHandler callbackHandler;
 	
-	public void caIdentifier(String caIdentifier) {
+	public JScepClientBuilder caIdentifier(String caIdentifier) {
 		this.caIdentifier = caIdentifier;
+		return this;
 	}
 	
 	public void identity(X509Certificate client, PrivateKey privateKey) {
@@ -49,16 +50,18 @@ public class JScepClientBuilder {
 		this.privateKey = privateKey;
 	}
 	
-	public void url(URL url) {
+	public JScepClientBuilder url(URL url) {
 		this.url = url;
+		return this;
 	}
 	
 	public Client build() {
 		return new Client(url, client, privateKey, callbackHandler, caIdentifier);
 	}
 
-	public void caFingerprint(CertificateFingerprint caCertificateFingerprint) {
+	public JScepClientBuilder caFingerprint(CertificateFingerprint caCertificateFingerprint) {
 		this.callbackHandler = new CaFingerprintCallbackHandler(caCertificateFingerprint);
+		return this;
 	}
 	
 	public static class CaFingerprintCallbackHandler implements CallbackHandler {
