@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.it_result.ca.CAClient;
 import me.it_result.ca.CAException;
+import me.it_result.ca.CertificateParameters;
 import me.it_result.ca.DuplicateSubjectException;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -73,8 +74,7 @@ public class ScepCAClient {
 	/**
 	 * Enrolls a certificate via SCEP
 	 * 
-	 * @param subject certificate subject DN 
-	 * @param scepPassword SCEP secret, can be used for automated enrollment
+	 * @param certificateParameters certificate subject DN 
 	 * @param pendingRetryIntervalMs used when SCEP server returns PENDING 
 	 * status. Defines an interval between certificate retrieval requests 
 	 * @param pendingTimeoutMs used when SCEP server returns PENDING status. 
@@ -88,11 +88,11 @@ public class ScepCAClient {
 	 * status returned
 	 * @throws CAException
 	 */
-	public X509Certificate enrollCertificate(String subject, char[] scepPassword, int pendingRetryIntervalMs, int pendingTimeoutMs) throws CAException {
+	public X509Certificate enrollCertificate(CertificateParameters certificateParameters, int pendingRetryIntervalMs, int pendingTimeoutMs) throws CAException {
 		try {
+			String subject = certificateParameters.getSubjectDN();
 			ensureCertificateNotSignedYet(subject);
-			byte[] csr = caClient.generateCSR(subject);
-			// TODO: the certificate returned by the caClient is not always a self-signed one
+			byte[] csr = caClient.generateCSR(certificateParameters);
 			X509Certificate identity = caClient.getCertificate(subject);
 			KeyPair keyPair = caClient.getKeypair(subject);
 			Client scep = initializeScepClient(identity, keyPair);

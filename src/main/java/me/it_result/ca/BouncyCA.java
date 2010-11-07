@@ -35,9 +35,7 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
-import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
-import org.bouncycastle.asn1.x509.KeyPurposeId;
-import org.bouncycastle.asn1.x509.X509Extensions;
+import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 
@@ -52,9 +50,9 @@ public class BouncyCA extends BouncyCABase implements CA {
 
 	public BouncyCA(String keystore, String keyAlgorithm, int keyBits,
 			int validityDays, String keystorePassword, String issuer, 
-			String signatureAlgorithm) {
+			String signatureAlgorithm, BouncyCAProfiles profiles) {
 		super(keystore, keyAlgorithm, keyBits, keystorePassword,
-				signatureAlgorithm);
+				signatureAlgorithm, profiles);
 		this.validityDays = validityDays;
 		this.issuer = issuer;
 	}
@@ -143,7 +141,7 @@ public class BouncyCA extends BouncyCABase implements CA {
 	 * @see me.it_result.ca.CA#signCertificate()
 	 */
 	@Override
-	public synchronized X509Certificate signCertificate(byte[] csrBytes, boolean server) throws CAException {
+	public synchronized X509Certificate signCertificate(byte[] csrBytes) throws CAException {
 		ensureInitialized();
 		try {
 			PKCS10CertificationRequest csr = new PKCS10CertificationRequest(csrBytes);
@@ -156,12 +154,9 @@ public class BouncyCA extends BouncyCABase implements CA {
 			PublicKey caPublicKey = keyStore.getCertificate(CA_ALIAS).getPublicKey();
 			BigInteger serialNumber = nextSerialNumber();
 			assembleCertificate(publicKey, caPublicKey, sn.toString(), issuer, serialNumber, false, validityDays);
-			ExtendedKeyUsage extendedKeyUsage;
-			if (server)
-				extendedKeyUsage = new ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth);
-			else
-				extendedKeyUsage = new ExtendedKeyUsage(KeyPurposeId.id_kp_clientAuth);
-			certGen.addExtension(X509Extensions.ExtendedKeyUsage, false, extendedKeyUsage);
+			ASN1Set csrAttributes = csr.getCertificationRequestInfo().getAttributes();
+			BouncyCAProfile profile = selectProfile(csrAttributes);
+			profile.generateCertificateExtensions(csrAttributes, certGen);
 			X509Certificate cert = certGen.generate(caPrivateKey);
 			String alias = BouncyCAUtils.generateAlias(sn);
 			keyStore.setCertificateEntry(alias, cert);
@@ -173,6 +168,15 @@ public class BouncyCA extends BouncyCABase implements CA {
 		} finally {
 			certGen.reset();
 		}
+	}
+
+	private BouncyCAProfile selectProfile(ASN1Set attributes) throws CAException {
+		BouncyCAProfile profile = profiles.getProfile(attributes);
+		if (profile == null)
+			profile = profiles.getDefaultProfile();
+		if (profile == null)
+			throw new CAException("Profile capable processing this CSR is not registered and there is no default profile set");
+		return profile;
 	}
 
 	private void ensureInitialized() throws CAException {

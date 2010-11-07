@@ -43,8 +43,10 @@ import java.util.Collections;
 
 import me.it_result.ca.BouncyCA;
 import me.it_result.ca.BouncyCAClient;
+import me.it_result.ca.BouncyCAProfiles;
 import me.it_result.ca.CAClient;
 import me.it_result.ca.DuplicateSubjectException;
+import me.it_result.ca.UserCertificateParameters;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.util.encoders.Base64;
@@ -70,7 +72,6 @@ public class ScepCAClientTest {
 	private static CertificateFingerprint CA_FINGERPRINT;
 	private static X509Certificate SELF_SIGNED_CERTIFICATE;
 	private static KeyPair KEYPAIR;
-	private static char[] SCEP_PASSWORD;
 	private static X509Certificate SIGNED_CERTIFICATE;
 	private static PKCS10CertificationRequest CSR;
 	private static X509CertSelector CERT_SELECTOR;
@@ -92,7 +93,6 @@ public class ScepCAClientTest {
 			KeySpec privKeySpec = new PKCS8EncodedKeySpec(Base64.decode(privateKey.getBytes("UTF-8")));
 			PrivateKey privKey = KeyFactory.getInstance("RSA").generatePrivate(privKeySpec);
 			KEYPAIR = new KeyPair(pubKey, privKey);
-			SCEP_PASSWORD = "scepPassword".toCharArray();
 			SIGNED_CERTIFICATE = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(Base64.decode(signedCertificate.getBytes("UTF-8"))));
 			byte[] csrBytes = Base64.decode(csr.getBytes("UTF-8"));
 			CSR = new PKCS10CertificationRequest(csrBytes);
@@ -113,6 +113,7 @@ public class ScepCAClientTest {
 	@Mock
 	private EnrolmentTransaction scepTransaction;
 	private CertStore certStore;
+	private UserCertificateParameters certParams;
 	
 	@BeforeMethod
 	public void setUp() throws Exception {
@@ -120,6 +121,8 @@ public class ScepCAClientTest {
 		ScepCAClient.BUILDER = scepBuilder;
 		scepCaClient = new ScepCAClient(caClient, SCEP_URL, CA_FINGERPRINT, CA_PROFILE);
 		certStore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(Collections.singletonList(SIGNED_CERTIFICATE)));
+		certParams = new UserCertificateParameters();
+		certParams.setSubjectDN(CLIENT_SUBJECT_DN);
 	}
 	
 	@Test
@@ -129,7 +132,7 @@ public class ScepCAClientTest {
 		// And certificate is enrolled automatically via scep
 		when(scepTransaction.send()).thenReturn(State.CERT_ISSUED);
 		when(scepTransaction.getCertStore()).thenReturn(certStore);
-		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(CLIENT_SUBJECT_DN, SCEP_PASSWORD, 1000, 1000);
+		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 1000);
 		// Then SCEP client should use a configuration from the ScepCAClient to connect to the server
 		verify(scepBuilder).caFingerprint(CA_FINGERPRINT);
 		verify(scepBuilder).caIdentifier(CA_PROFILE);
@@ -143,7 +146,7 @@ public class ScepCAClientTest {
 	}
 	
 	private void defineMockRulesForEnrollCertificate() throws Exception {
-		when(caClient.generateCSR(CLIENT_SUBJECT_DN)).thenReturn(CSR.getEncoded());
+		when(caClient.generateCSR(certParams)).thenReturn(CSR.getEncoded());
 		when(caClient.getCertificate(CLIENT_SUBJECT_DN)).thenReturn(SELF_SIGNED_CERTIFICATE);
 		when(caClient.getKeypair(CLIENT_SUBJECT_DN)).thenReturn(KEYPAIR);
 		when(scepBuilder.build()).thenReturn(scepClient);
@@ -154,11 +157,11 @@ public class ScepCAClientTest {
 	@Test
 	public void testEnrollmentOfEnrolledCertificate() throws Exception {
 		// When enrollCertificate is invoked for an already enrolled certificate
-		when(caClient.generateCSR(CLIENT_SUBJECT_DN)).thenReturn(CSR.getEncoded());
+		when(caClient.generateCSR(certParams)).thenReturn(CSR.getEncoded());
 		when(caClient.getCertificate(CLIENT_SUBJECT_DN)).thenReturn(SIGNED_CERTIFICATE);
 		// Then DuplicateSubjectException must be thrown
 		try {
-			scepCaClient.enrollCertificate(CLIENT_SUBJECT_DN, SCEP_PASSWORD, 1000, 1000);
+			scepCaClient.enrollCertificate(certParams, 1000, 1000);
 			fail("DuplicateSubjectException expected");
 		} catch (DuplicateSubjectException e) {}
 	}
@@ -171,7 +174,7 @@ public class ScepCAClientTest {
 		when(scepTransaction.poll()).thenReturn(State.CERT_ISSUED);
 		when(scepTransaction.getCertStore()).thenReturn(certStore);
 		long startTime = System.currentTimeMillis();
-		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(CLIENT_SUBJECT_DN, SCEP_PASSWORD, 1000, 10000);
+		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 10000);
 		// Then client should wait for a while and retry fetching the certificate
 		long endTime = System.currentTimeMillis();
 		assertTrue("" + (endTime - startTime), endTime - startTime >= 1000);
@@ -190,7 +193,7 @@ public class ScepCAClientTest {
 		when(scepTransaction.poll()).thenReturn(State.CERT_REQ_PENDING).thenReturn(State.CERT_REQ_PENDING);
 		when(scepTransaction.getCertStore()).thenReturn(certStore);
 		long startTime = System.currentTimeMillis();
-		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(CLIENT_SUBJECT_DN, SCEP_PASSWORD, 1000, 2000);
+		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 2000);
 		// Then client stops fetching the certificate
 		long endTime = System.currentTimeMillis();
 		assertTrue(endTime - startTime >= 2000);
@@ -199,7 +202,7 @@ public class ScepCAClientTest {
 		// When certificate is enrolled 
 		// And client retries the request
 		when(scepTransaction.send()).thenReturn(State.CERT_ISSUED);
-		enrolledCertificate = scepCaClient.enrollCertificate(CLIENT_SUBJECT_DN, SCEP_PASSWORD, 1000, 2000);
+		enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 2000);
 		// The client should fetch the certificate and store it locally
 		verify(caClient).storeCertificate(SIGNED_CERTIFICATE);
 		assertEquals(SIGNED_CERTIFICATE, enrolledCertificate);
@@ -214,7 +217,7 @@ public class ScepCAClientTest {
 		when(scepTransaction.getFailInfo()).thenReturn(FailInfo.badTime);
 		// Then ScepFailureException must be thrown
 		try {
-			scepCaClient.enrollCertificate(CLIENT_SUBJECT_DN, SCEP_PASSWORD, 1000, 2000);
+			scepCaClient.enrollCertificate(certParams, 1000, 2000);
 			fail("ScepFailureException expected");
 		} catch (ScepFailureException e) {
 			// And exception message should contain the failure reason
@@ -224,18 +227,21 @@ public class ScepCAClientTest {
 	
 	public static void main(String[] args) {
 		try {
-			BouncyCA ca = new BouncyCA("target/scep.ca.keystore", "RSA", 1024, 36500, "changeit", "CN=CA", "SHA512withRSA");
+			BouncyCAProfiles profiles = BouncyCAProfiles.getDefaultInstance();
+			BouncyCA ca = new BouncyCA("target/scep.ca.keystore", "RSA", 1024, 36500, "changeit", "CN=CA", "SHA512withRSA", profiles);
 			ca.initialize();
 			printCertificate("CA certificate", ca.getCACertificate());
-			BouncyCAClient caClient = new BouncyCAClient("target/scep.client.keystore", "RSA", 1024, 36500, "chengeit", "SHA512withRSA");
-			byte[] csr = caClient.generateCSR(CLIENT_SUBJECT_DN);
+			BouncyCAClient caClient = new BouncyCAClient("target/scep.client.keystore", "RSA", 1024, 36500, "chengeit", "SHA512withRSA", profiles);
+			UserCertificateParameters params = new UserCertificateParameters();
+			params.setSubjectDN(CLIENT_SUBJECT_DN);
+			byte[] csr = caClient.generateCSR(params);
 			printBytes("CSR", csr);
 			X509Certificate selfSignedCertificate = caClient.getCertificate(CLIENT_SUBJECT_DN);
 			printCertificate("Self-signed certificate", selfSignedCertificate);
 			KeyPair keyPair = caClient.getKeypair(CLIENT_SUBJECT_DN);
 			printBytes("Private key", keyPair.getPrivate().getEncoded());
 			printBytes("Public key", keyPair.getPublic().getEncoded());
-			X509Certificate signedCertificate = ca.signCertificate(csr, false);
+			X509Certificate signedCertificate = ca.signCertificate(csr);
 			printCertificate("Signed certificate", signedCertificate);
 			ca.destroy();
 		} catch (Exception e) {

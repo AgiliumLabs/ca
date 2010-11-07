@@ -17,19 +17,20 @@
 package me.it_result.ca;
 
 import java.security.KeyPair;
-import java.util.Collection;
 
 import org.bouncycastle.asn1.ASN1Set;
-import org.bouncycastle.asn1.x509.X509Extension;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
+import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 /**
  * @author roman
  *
  */
-public interface BouncyCAProfile<T extends CertificateParameters> {
+public interface BouncyCAProfile {
 	
-	public PKCS10CertificationRequest generateCsr(KeyPair keyPair, T certificateParameters, String signatureAlgorithm) throws Exception;
-	public Collection<X509Extension> generateCertificateExtensions(ASN1Set csrAttributes);
+	public PKCS10CertificationRequest generateCsr(KeyPair keyPair, CertificateParameters certificateParameters, String signatureAlgorithm) throws Exception;
+	public void generateCertificateExtensions(ASN1Set csrAttributes, X509V3CertificateGenerator certificateGenerator);
+	public boolean isCompatible(ASN1Set csrAttributes);
+	public boolean isCompatible(CertificateParameters certificateParameters);
 
 }

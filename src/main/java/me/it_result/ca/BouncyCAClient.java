@@ -26,7 +26,6 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 
-import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 
 /**
@@ -39,8 +38,8 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 	
 	public BouncyCAClient(String keystore, String keyAlgorithm, int keyBits, 
 			int selfSignedCertificateValidityDays, String keystorePassword, 
-			String signatureAlgorithm) {
-		super(keystore, keyAlgorithm, keyBits, keystorePassword, signatureAlgorithm);
+			String signatureAlgorithm, BouncyCAProfiles profiles) {
+		super(keystore, keyAlgorithm, keyBits, keystorePassword, signatureAlgorithm, profiles);
 		this.selfSignedCertificateValidityDays = selfSignedCertificateValidityDays;
 	}
 	/* (non-Javadoc)
@@ -92,10 +91,11 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 	 * @see me.it_result.ca.CA#generateCSR()
 	 */
 	@Override
-	public synchronized byte[] generateCSR(String subjectDN) throws CAException {
+	public synchronized byte[] generateCSR(CertificateParameters certificateParameters) throws CAException {
 		try {
 			KeyPair keyPair;
 			KeyStore keyStore = loadKeystore();
+			String subjectDN = certificateParameters.getSubjectDN();
 			String alias = BouncyCAUtils.generateAlias(subjectDN);
 			boolean containsAlias = keyStore.containsAlias(alias);
 			if (!containsAlias) 
@@ -103,7 +103,8 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 			else 
 				keyPair = getKeypair(subjectDN);
 			X509Certificate cert = assembleCertificate(keyPair.getPublic(), keyPair.getPublic(), subjectDN, subjectDN, new BigInteger("1"), false, selfSignedCertificateValidityDays).generate(keyPair.getPrivate());
-			PKCS10CertificationRequest csr = new PKCS10CertificationRequest(signatureAlgorithm, new X509Name(subjectDN), keyPair.getPublic(), null, keyPair.getPrivate());
+			BouncyCAProfile profile = selectProfile(certificateParameters);
+			PKCS10CertificationRequest csr = profile.generateCsr(keyPair, certificateParameters, signatureAlgorithm);
 			byte[] csrBytes = csr.getEncoded();
 			if (!containsAlias) {
 				keyStore.setKeyEntry(alias, keyPair.getPrivate(), keystorePassword.toCharArray(), new X509Certificate[] {cert});
@@ -119,6 +120,13 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 		}
 	}
 
+	private BouncyCAProfile selectProfile(
+			CertificateParameters certificateParameters) throws CAException {
+		BouncyCAProfile profile = profiles.getProfile(certificateParameters);
+		if (profile == null)
+			throw new CAException("Certificate profile for " + certificateParameters.getClass() + " is not registered");
+		return profile;
+	}
 	@Override
 	public synchronized KeyPair getKeypair(String subjectDN) throws CAException {
 		try {

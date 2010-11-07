@@ -67,13 +67,13 @@ public interface CAClient {
 	 * Generates a CSR given a subject. If the keypair is already generated for
 	 * the subject, the same keypair is used for generating CSR.
 	 * 
-	 * @param subjectDN the certificate subject
+	 * @param certificateParameters the certificate parameters
 	 * 
 	 * @return a DER-encoded PKCS#10 CSR
 	 * 
 	 * @throws CAException
 	 */
-	public byte[] generateCSR(String subjectDN) throws CAException;
+	public byte[] generateCSR(CertificateParameters certificateParameters) throws CAException;
 	
 	/**
 	 * Given subject name, returns a keypair generated in generateCSR method. In

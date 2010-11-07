@@ -56,7 +56,7 @@ public class BouncyCATest extends CATest {
 		this.jdkSignatureAlgorithm = jdkSignatureAlgorithm;
 		new File(KEYSTORE).delete();
 		new File(KEYSTORE_PROPS).delete();
-		ca = new BouncyCA(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, bouncyCastleProviderSignatureAlgorithm);
+		ca = new BouncyCA(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, bouncyCastleProviderSignatureAlgorithm, BouncyCAProfiles.getDefaultInstance());
 	}
 	
 	@AfterMethod
@@ -106,16 +106,20 @@ public class BouncyCATest extends CATest {
 
 	@DataProvider(name="signCertificate")
 	public Object[][] getSignCertificateData() {
-		return new Object[][] {new Object[] {Boolean.TRUE}, new Object[] {Boolean.FALSE}};
+		// TODO: impelement
+		byte[] serverCsr = null;
+		byte[] clientCsr = null;
+		byte[] externalCsr = Base64.decode("MIICbTCCAVUCAQAwKjENMAsGA1UEAwwEdGVzdDEZMBcGCgmSJomT8ixkAQEMCXRlc3RAdGVzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKsExxF9s51tP/Phhybs9t3eVQyksxC1hn/tv9FSQ3N0UrMW5Uuju0cQLFelZwnRLllCES3J4juGQw1sl5TqdFm7wLK1CSwTuEQhx2eLlpBq/0m5DN91xeDZe9jaA5XuH+uGzXm6lWohgbVaqAOvyxX5Y0E1P4XxtWKKCLiODgNQcvdo7XbbWIujlQfau0tNNPg2A/GbiDVzcF1P2iUnlraJt9BKjObNsP78eyPDQgYmnc5MVaBwxYvKnhRDkyZNESvdVGWQumRT8syA5PeL6563ld5dC9a5lBWghK9LJroQLFl+HJCGiGRfOTPd6hXZu5Vh1Vz3dwnDEvyusALdkmECAwEAATANBgkqhkiG9w0BAQ0FAAOCAQEASOZa0icr8rxBVJjwXOlxcxRhlW9ROsdVxqYGPFy8qobquTXvxhcPHRUCpGev311f61yHSqQr6aCDmTyyMlqfiJ6gAWS7EJPxuxNLRecpRaJ7Wnl33PKLe5YvQia5K+fyZT06aFaLRQlioXilHBPMzVANjBbe9banzykoO2VTp1/lEFM3lfTRSH4tE9QX/Y5HHcaic8S/jr8aPt/kMHSmdDVsK5aEoT0tpHHYBg7DF7QBVvZEBtG0cJaEjN91tLlqKtdNz8LILnOmtgOWCgjb4F/giqKy9/Hfpxf8iC3eDscsiPJ7uf8QHWqa603Q6UISvq3Eg8Anls3aX3f8C12YoA==");
+		return new Object[][] {new Object[] {serverCsr, Boolean.TRUE}, new Object[] {clientCsr, Boolean.FALSE}, new Object[] {externalCsr, Boolean.FALSE}};
 	}
 	
 	@Test(dataProvider="signCertificate")
-	public void testSignCertificate(boolean server) throws Exception {
+	public void testSignCertificate(byte[] csr, boolean server) throws Exception {
 		// Given an initialized CA 
 		ca().initialize();
 		// When certificate is signed
 		Date minBeforeDate = new Date();
-		X509Certificate cert = ca().signCertificate(getSampleCsr(), server);
+		X509Certificate cert = ca().signCertificate(csr);
 		Date maxBeforeDate = new Date();
 		// Then a valid certificate should be generated
 		assertNotNull(cert);
@@ -126,10 +130,6 @@ public class BouncyCATest extends CATest {
 	
 	private String getSampleSubjectName() {
 		return "CN=test,UID=test@test";
-	}
-
-	private byte[] getSampleCsr() {
-		return Base64.decode("MIICbTCCAVUCAQAwKjENMAsGA1UEAwwEdGVzdDEZMBcGCgmSJomT8ixkAQEMCXRlc3RAdGVzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKsExxF9s51tP/Phhybs9t3eVQyksxC1hn/tv9FSQ3N0UrMW5Uuju0cQLFelZwnRLllCES3J4juGQw1sl5TqdFm7wLK1CSwTuEQhx2eLlpBq/0m5DN91xeDZe9jaA5XuH+uGzXm6lWohgbVaqAOvyxX5Y0E1P4XxtWKKCLiODgNQcvdo7XbbWIujlQfau0tNNPg2A/GbiDVzcF1P2iUnlraJt9BKjObNsP78eyPDQgYmnc5MVaBwxYvKnhRDkyZNESvdVGWQumRT8syA5PeL6563ld5dC9a5lBWghK9LJroQLFl+HJCGiGRfOTPd6hXZu5Vh1Vz3dwnDEvyusALdkmECAwEAATANBgkqhkiG9w0BAQ0FAAOCAQEASOZa0icr8rxBVJjwXOlxcxRhlW9ROsdVxqYGPFy8qobquTXvxhcPHRUCpGev311f61yHSqQr6aCDmTyyMlqfiJ6gAWS7EJPxuxNLRecpRaJ7Wnl33PKLe5YvQia5K+fyZT06aFaLRQlioXilHBPMzVANjBbe9banzykoO2VTp1/lEFM3lfTRSH4tE9QX/Y5HHcaic8S/jr8aPt/kMHSmdDVsK5aEoT0tpHHYBg7DF7QBVvZEBtG0cJaEjN91tLlqKtdNz8LILnOmtgOWCgjb4F/giqKy9/Hfpxf8iC3eDscsiPJ7uf8QHWqa603Q6UISvq3Eg8Anls3aX3f8C12YoA==");
 	}
 
 }

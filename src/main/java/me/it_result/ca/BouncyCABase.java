@@ -59,6 +59,7 @@ public abstract class BouncyCABase {
 	protected int keyBits;
 	protected String keystorePassword;
 	protected String signatureAlgorithm;
+	protected BouncyCAProfiles profiles;
 
 	protected X509V3CertificateGenerator certGen = new X509V3CertificateGenerator();
 	
@@ -67,13 +68,15 @@ public abstract class BouncyCABase {
 	}
 	
 	public BouncyCABase(String keystore, String keyAlgorithm, int keyBits,
-			String keystorePassword, String signatureAlgorithm) {
+			String keystorePassword, String signatureAlgorithm, 
+			BouncyCAProfiles profiles) {
 		super();
 		this.keystore = keystore;
 		this.keyAlgorithm = keyAlgorithm;
 		this.keyBits = keyBits;
 		this.keystorePassword = keystorePassword;
 		this.signatureAlgorithm = signatureAlgorithm;
+		this.profiles = profiles;
 	}
 
 	protected void saveKeystore(KeyStore keyStore) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {

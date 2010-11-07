@@ -55,8 +55,9 @@ public class BouncyCAClientTest extends CAClientTest {
 	@Parameters({"keyAlgorithm", "keyBits", "bouncyCastleProviderSignatureAlgorithm", "jdkSignatureAlgorithm"})
 	public void setUp(@Optional("RSA") String keyAlgorithm, @Optional("1024") int keyBits, @Optional("MD5WithRSA") String signatureAlgorithm, @Optional("MD5withRSA") String jdkSignatureAlgorithm) throws AlreadyInitializedException, CAException {
 		this.jdkSignatureAlgorithm = jdkSignatureAlgorithm;
-		ca = new BouncyCA(CA_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", jdkSignatureAlgorithm);
-		client = new BouncyCAClient(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm);
+		BouncyCAProfiles profiles = BouncyCAProfiles.getDefaultInstance();
+		ca = new BouncyCA(CA_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", jdkSignatureAlgorithm, profiles);
+		client = new BouncyCAClient(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, profiles);
 		client.destroy();
 		ca.destroy();
 		ca.initialize();
@@ -85,7 +86,7 @@ public class BouncyCAClientTest extends CAClientTest {
 		assertNull(client.getKeypair(SUBJECT_NAME));
 		// When generateCSR('CN=test,UID=test@test') is invoked 
 		Date minBeforeDate = new Date();
-		byte[] csr = client.generateCSR(SUBJECT_NAME);
+		byte[] csr = client.generateCSR(CERT_PARAMS);
 		Date maxBeforeDate = new Date();
 		// Then CSR is generated for the subject name
 		PKCS10CertificationRequest parsedCsr = new PKCS10CertificationRequest(csr);

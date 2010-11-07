@@ -23,8 +23,10 @@ import java.util.Set;
 
 import me.it_result.ca.BouncyCA;
 import me.it_result.ca.BouncyCAClient;
+import me.it_result.ca.BouncyCAProfiles;
 import me.it_result.ca.CA;
 import me.it_result.ca.CAClient;
+import me.it_result.ca.UserCertificateParameters;
 
 import org.bouncycastle.jce.X509Principal;
 import org.eclipse.jetty.server.Server;
@@ -93,12 +95,12 @@ public class ScepCAClientIntegrationTest {
 
 	private void destroyCa(String keyAlgorithm, int keyBits,
 			String signatureAlgorithm) throws Exception {
-		CA ca = new BouncyCA(CA_KEYSTORE, "RSA", keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", signatureAlgorithm);
+		CA ca = new BouncyCA(CA_KEYSTORE, "RSA", keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", signatureAlgorithm, BouncyCAProfiles.getDefaultInstance());
 		ca.destroy();
 	}
 
 	public ScepCAClient initializeScepClient(CA ca, String keyAlgorithm, int keyBits, String signatureAlgorithm) throws Exception {
-		CAClient caClient = new BouncyCAClient(CLIENT_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm);
+		CAClient caClient = new BouncyCAClient(CLIENT_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, BouncyCAProfiles.getDefaultInstance());
 		URL scepUrl = new URL(SCEP_URL);
 		X509Certificate caCertificate = ca.getCACertificate();
 		CertificateFingerprint caFingerprint = CertificateFingerprint.calculate(caCertificate);
@@ -125,7 +127,10 @@ public class ScepCAClientIntegrationTest {
 	@Test
 	public void testEnrollment() throws Exception {
 		// When enrollCertificate is invoked 
-		scepClient.enrollCertificate(SUBJECT_DN, SCEP_PASSWORD.toCharArray(), 1000, 1000);
+		UserCertificateParameters params = new UserCertificateParameters();
+		params.setChallengePassword(SCEP_PASSWORD);
+		params.setSubjectDN(SUBJECT_DN);
+		scepClient.enrollCertificate(params, 1000, 1000);
 		// The certificate should be enrolled by the server
 		CA ca = CARepository.getCA();
 		Set<X509Certificate> certificates = ca.listCertificates();

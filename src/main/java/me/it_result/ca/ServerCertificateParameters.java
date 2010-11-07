@@ -20,8 +20,6 @@ package me.it_result.ca;
  * @author roman
  *
  */
-public interface CertificateParameters {
+public class ServerCertificateParameters extends CertificateParametersBase {
 
-	public String getSubjectDN();
-	
 }

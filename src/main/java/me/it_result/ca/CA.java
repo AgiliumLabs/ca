@@ -60,8 +60,6 @@ public interface CA {
 	 * Sings a certificate request.
 	 * 
 	 * @param csrBytes DER-encoded PKCS#10 CSR
-	 * @param server generate a server-side certificate. A server-side 
-	 * certificate is distinguished via Extended Key Usage extension. 
 	 * 
 	 * @return a signed certificate
 	 * 
@@ -70,7 +68,7 @@ public interface CA {
 	 * subject name is signed already
 	 * @throws CAException
 	 */
-	public X509Certificate signCertificate(byte[] csrBytes, boolean server) throws CANotInitializedException, DuplicateSubjectException, CAException;
+	public X509Certificate signCertificate(byte[] csrBytes) throws CANotInitializedException, DuplicateSubjectException, CAException;
 
 	/**
 	 * Provides an access to the CA certificate

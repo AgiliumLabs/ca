@@ -63,9 +63,7 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 		try {
 			// TODO: Verify SCEP password 
 			byte[] csrBytes = certificationRequest.getEncoded();
-			// TODO: FIXME
-			boolean server = false;
-			X509Certificate certificate = ca().signCertificate(csrBytes, server);
+			X509Certificate certificate = ca().signCertificate(csrBytes);
 			return Collections.singletonList(certificate);
 		} catch (Exception e) {
 			throw new RuntimeException(e);

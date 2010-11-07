@@ -34,6 +34,12 @@ import org.testng.annotations.Test;
 public abstract class CAClientTest {
 
 	protected static final String SUBJECT_NAME = "CN=test,UID=test@test";
+	protected static final UserCertificateParameters CERT_PARAMS;
+	
+	static {
+		CERT_PARAMS = new UserCertificateParameters();
+		CERT_PARAMS.setSubjectDN(SUBJECT_NAME);
+	}
 
 	@Test
 	public void testDestroy() throws CAException {
@@ -87,7 +93,7 @@ public abstract class CAClientTest {
 	@Test
 	public void testGenerateCSRForExistingKeypair() throws Exception {
 		// Given CSR is generated for 'CN=test,UID=test@test' subject name
-		byte[] csr = client().generateCSR(SUBJECT_NAME);
+		byte[] csr = client().generateCSR(CERT_PARAMS);
 		KeyPair keypair = client().getKeypair(SUBJECT_NAME);
 		X509Certificate certificate = client().getCertificate(SUBJECT_NAME);
 		assertDuplicateCsrInvocation(csr, keypair, certificate);
@@ -95,7 +101,7 @@ public abstract class CAClientTest {
 	
 	private void assertDuplicateCsrInvocation(byte[] csr, KeyPair keypair, X509Certificate certificate) throws Exception {
 		// When generateCSR('CN=test,UID=test@test') is invoked
-		byte[] newCsr = client().generateCSR(SUBJECT_NAME);
+		byte[] newCsr = client().generateCSR(CERT_PARAMS);
 		// Then a new CSR is generated for the subject name using the keypair generated earlier
 		PKCS10CertificationRequest parsedCsr = new PKCS10CertificationRequest(csr);
 		PKCS10CertificationRequest newParsedCsr = new PKCS10CertificationRequest(newCsr);
@@ -113,8 +119,8 @@ public abstract class CAClientTest {
 	@Test
 	public void testGenerateCSRForSignedCertificate() throws Exception {
 		// Given certificate is signed for 'CN=test,UID=test@test' subject name
-		byte[] csr = client().generateCSR(SUBJECT_NAME);
-		X509Certificate cert = ca().signCertificate(csr, false);
+		byte[] csr = client().generateCSR(CERT_PARAMS);
+		X509Certificate cert = ca().signCertificate(csr);
 		client().initialize(ca().getCACertificate());
 		client().storeCertificate(cert);
 		// When generateCSR('CN=test,UID=test@test') is invoked
@@ -126,8 +132,8 @@ public abstract class CAClientTest {
 		// Given an initialized client
 		client().initialize(ca().getCACertificate());
 		// When certificate signed
-		byte[] csr = client().generateCSR(SUBJECT_NAME);
-		X509Certificate certificate = ca().signCertificate(csr, false);
+		byte[] csr = client().generateCSR(CERT_PARAMS);
+		X509Certificate certificate = ca().signCertificate(csr);
 		// Then it should be possible to store the certificate
 		client().storeCertificate(certificate);
 	}
@@ -137,8 +143,8 @@ public abstract class CAClientTest {
 		// Given an uninitialized client
 		assertFalse(client().isInitialized());
 		// When a signed certificate stored
-		byte[] csr = client().generateCSR(SUBJECT_NAME);
-		X509Certificate cert = ca().signCertificate(csr, false);
+		byte[] csr = client().generateCSR(CERT_PARAMS);
+		X509Certificate cert = ca().signCertificate(csr);
 		try {
 			client().storeCertificate(cert);
 			fail("CANotInitializedException expected");
@@ -149,14 +155,14 @@ public abstract class CAClientTest {
 	
 	@Test
 	public void testStoreCertificateInvalidCertificateKey() throws Exception {
-		byte[] wrongCsr = client().generateCSR(SUBJECT_NAME);
+		byte[] wrongCsr = client().generateCSR(CERT_PARAMS);
 		client().destroy();
 		// Given a CSR is generated for 'CN=test,UID=test@test' subject name 
-		client().generateCSR(SUBJECT_NAME);
+		client().generateCSR(CERT_PARAMS);
 		// And client is initialized
 		client().initialize(ca().getCACertificate());
 		// When a signed certificate for the same subject name, but with different public key is stored
-		X509Certificate wrongCert = ca().signCertificate(wrongCsr, false);
+		X509Certificate wrongCert = ca().signCertificate(wrongCsr);
 		try {
 			client().storeCertificate(wrongCert);
 			fail("InvalidCertificateKeyException expected");
@@ -168,13 +174,13 @@ public abstract class CAClientTest {
 	@Test
 	public void testStoreCertificateInvalidCA() throws Exception {
 		// Given a CSR is generated for 'CN=test,UID=test@test' subject name
-		byte[] csr = client().generateCSR(SUBJECT_NAME);
+		byte[] csr = client().generateCSR(CERT_PARAMS);
 		// And client is initialized with CA certificate
 		client().initialize(ca().getCACertificate());
 		// When a certificate, signed by a different CA is stored
 		ca().destroy();
 		ca().initialize();
-		X509Certificate wrongCertificate = ca().signCertificate(csr, false);
+		X509Certificate wrongCertificate = ca().signCertificate(csr);
 		try {
 			client().storeCertificate(wrongCertificate);
 			fail("InvalidCAException expected");
