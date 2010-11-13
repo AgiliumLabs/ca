@@ -229,6 +229,7 @@ public class ScepCAClientTest {
 		try {
 			BouncyCAProfiles profiles = BouncyCAProfiles.getDefaultInstance();
 			BouncyCA ca = new BouncyCA("target/scep.ca.keystore", "RSA", 1024, 36500, "changeit", "CN=CA", "SHA512withRSA", profiles);
+			ca.destroy();
 			ca.initialize();
 			printCertificate("CA certificate", ca.getCACertificate());
 			BouncyCAClient caClient = new BouncyCAClient("target/scep.client.keystore", "RSA", 1024, 36500, "chengeit", "SHA512withRSA", profiles);

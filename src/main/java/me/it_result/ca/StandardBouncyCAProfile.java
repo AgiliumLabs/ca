@@ -17,10 +17,14 @@
 package me.it_result.ca;
 
 import java.security.KeyPair;
+import java.util.Enumeration;
 
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Set;
+import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DERPrintableString;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.pkcs.Attribute;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
@@ -39,6 +43,11 @@ public class StandardBouncyCAProfile implements BouncyCAProfile {
 
 	private static final String SERVER_PROFILE = "ServerCertificate";
 	private static final String CLIENT_PROFILE = "ClientCertificate";
+	
+	/**
+	 * TODO: Choose an appropriate attribute OID for profile ID
+	 */
+	private static final DERObjectIdentifier PROFILE_ID_ATTR = PKCSObjectIdentifiers.pkcs_9_at_contentType;
 
 	@Override
 	public void generateCertificateExtensions(
@@ -56,16 +65,18 @@ public class StandardBouncyCAProfile implements BouncyCAProfile {
 	public PKCS10CertificationRequest generateCsr(KeyPair keyPair, CertificateParameters certificateParameters, String signatureAlgorithm) throws Exception {
 		if (!isCompatible(certificateParameters))
 			throw new CAException("Certificate parameters are not compatible with profile");
-		UserCertificateParameters userParams = (UserCertificateParameters) certificateParameters;
+		CertificateParametersBase params = (CertificateParametersBase) certificateParameters;
 		ASN1EncodableVector attributeVector = new ASN1EncodableVector();
 		// challengePassword
-		if (userParams.getChallengePassword() != null) {
+		if (params.getChallengePassword() != null) {
 			ASN1EncodableVector passwordVector = new ASN1EncodableVector();
-			passwordVector.add(new DERPrintableString(userParams.getChallengePassword()));
+			passwordVector.add(new DERPrintableString(params.getChallengePassword()));
 			Attribute passwordAttribute = new Attribute(PKCSObjectIdentifiers.pkcs_9_at_challengePassword, new DERSet(passwordVector));
 			attributeVector.add(passwordAttribute);
 		}
-		// TODO: profile id attribute
+		String profileId = certificateParameters instanceof ServerCertificateParameters ? SERVER_PROFILE : CLIENT_PROFILE;
+		Attribute profileIdAttribute = new Attribute(PROFILE_ID_ATTR, new DERSet(new ASN1Encodable[] {new DERPrintableString(profileId)}));
+		attributeVector.add(profileIdAttribute);
 		DERSet attributes = new DERSet(attributeVector); 
 		PKCS10CertificationRequest csr = new PKCS10CertificationRequest(signatureAlgorithm, new X509Name(certificateParameters.getSubjectDN()), keyPair.getPublic(), attributes, keyPair.getPrivate());
 		return csr;
@@ -78,11 +89,22 @@ public class StandardBouncyCAProfile implements BouncyCAProfile {
 	}
 
 	private String extractProfileId(ASN1Set csrAttributes) {
-		// TODO Implement
 		String profileId = null;
+		try {
+			Enumeration<?> attrEnum = csrAttributes.getObjects();
+			while (attrEnum.hasMoreElements()) {
+				DERSequence attr = (DERSequence) attrEnum.nextElement();
+				if (attr.getObjectAt(0).equals(PROFILE_ID_ATTR)) {
+					ASN1Set profileIdSet = (ASN1Set) attr.getObjectAt(1);
+					DERPrintableString profileIdValue = (DERPrintableString) profileIdSet.getObjectAt(0);
+					profileId = ((DERPrintableString) profileIdValue).getString();
+					break;
+				}
+			}
+		} catch (Exception e) {}
 		if (profileId == null)
 			profileId = CLIENT_PROFILE;
-		return CLIENT_PROFILE;
+		return profileId;
 	}
 
 	private boolean isServerProfile(ASN1Set csrAttributes) {
