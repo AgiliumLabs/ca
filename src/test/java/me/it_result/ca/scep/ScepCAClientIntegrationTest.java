@@ -42,8 +42,6 @@ import org.testng.annotations.Test;
 import static org.testng.AssertJUnit.*;
 
 /**
- * TODO: split unit/IT tests
- * 
  * @author roman
  *
  */
@@ -130,7 +128,7 @@ public class ScepCAClientIntegrationTest {
 		UserCertificateParameters params = new UserCertificateParameters();
 		params.setChallengePassword(SCEP_PASSWORD);
 		params.setSubjectDN(SUBJECT_DN);
-		scepClient.enrollCertificate(params, 1000, 1000);
+		scepClient.enrollCertificate(params);
 		// The certificate should be enrolled by the server
 		CA ca = CARepository.getCA();
 		Set<X509Certificate> certificates = ca.listCertificates();

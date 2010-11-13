@@ -132,7 +132,7 @@ public class ScepCAClientTest {
 		// And certificate is enrolled automatically via scep
 		when(scepTransaction.send()).thenReturn(State.CERT_ISSUED);
 		when(scepTransaction.getCertStore()).thenReturn(certStore);
-		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 1000);
+		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams);
 		// Then SCEP client should use a configuration from the ScepCAClient to connect to the server
 		verify(scepBuilder).caFingerprint(CA_FINGERPRINT);
 		verify(scepBuilder).caIdentifier(CA_PROFILE);
@@ -161,7 +161,7 @@ public class ScepCAClientTest {
 		when(caClient.getCertificate(CLIENT_SUBJECT_DN)).thenReturn(SIGNED_CERTIFICATE);
 		// Then DuplicateSubjectException must be thrown
 		try {
-			scepCaClient.enrollCertificate(certParams, 1000, 1000);
+			scepCaClient.enrollCertificate(certParams);
 			fail("DuplicateSubjectException expected");
 		} catch (DuplicateSubjectException e) {}
 	}
@@ -174,7 +174,9 @@ public class ScepCAClientTest {
 		when(scepTransaction.poll()).thenReturn(State.CERT_ISSUED);
 		when(scepTransaction.getCertStore()).thenReturn(certStore);
 		long startTime = System.currentTimeMillis();
-		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 10000);
+		scepCaClient.setPollIntervalInSeconds(1);
+		scepCaClient.setPollTimeoutInSeconds(10);
+		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams);
 		// Then client should wait for a while and retry fetching the certificate
 		long endTime = System.currentTimeMillis();
 		assertTrue("" + (endTime - startTime), endTime - startTime >= 1000);
@@ -193,7 +195,9 @@ public class ScepCAClientTest {
 		when(scepTransaction.poll()).thenReturn(State.CERT_REQ_PENDING).thenReturn(State.CERT_REQ_PENDING);
 		when(scepTransaction.getCertStore()).thenReturn(certStore);
 		long startTime = System.currentTimeMillis();
-		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 2000);
+		scepCaClient.setPollIntervalInSeconds(1);
+		scepCaClient.setPollTimeoutInSeconds(2);
+		X509Certificate enrolledCertificate = scepCaClient.enrollCertificate(certParams);
 		// Then client stops fetching the certificate
 		long endTime = System.currentTimeMillis();
 		assertTrue(endTime - startTime >= 2000);
@@ -202,7 +206,7 @@ public class ScepCAClientTest {
 		// When certificate is enrolled 
 		// And client retries the request
 		when(scepTransaction.send()).thenReturn(State.CERT_ISSUED);
-		enrolledCertificate = scepCaClient.enrollCertificate(certParams, 1000, 2000);
+		enrolledCertificate = scepCaClient.enrollCertificate(certParams);
 		// The client should fetch the certificate and store it locally
 		verify(caClient).storeCertificate(SIGNED_CERTIFICATE);
 		assertEquals(SIGNED_CERTIFICATE, enrolledCertificate);
@@ -217,7 +221,7 @@ public class ScepCAClientTest {
 		when(scepTransaction.getFailInfo()).thenReturn(FailInfo.badTime);
 		// Then ScepFailureException must be thrown
 		try {
-			scepCaClient.enrollCertificate(certParams, 1000, 2000);
+			scepCaClient.enrollCertificate(certParams);
 			fail("ScepFailureException expected");
 		} catch (ScepFailureException e) {
 			// And exception message should contain the failure reason
