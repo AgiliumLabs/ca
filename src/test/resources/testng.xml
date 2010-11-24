@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <parameter name="bouncyCastleProviderSignatureAlgorithm" value="MD5WithRSA"/> 	
     <parameter name="jdkSignatureAlgorithm" value="MD5withRSA"/> 	
     <packages>
-       <package name="me.it_result.ca"/>
+       <package name="me.it_result.ca.*"/>
     </packages>
   </test>
   <test name="DSA test">
@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <parameter name="bouncyCastleProviderSignatureAlgorithm" value="SHA1withDSA"/> 	
     <parameter name="jdkSignatureAlgorithm" value="SHA1withDSA"/> 	
     <packages>
-       <package name="me.it_result.ca"/>
+       <package name="me.it_result.ca.*"/>
     </packages>
   </test>
 </suite>
