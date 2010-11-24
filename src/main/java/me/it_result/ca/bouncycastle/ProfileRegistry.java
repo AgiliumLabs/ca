@@ -14,10 +14,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import me.it_result.ca.CertificateParameters;
 
 import org.bouncycastle.asn1.ASN1Set;
 
@@ -25,40 +27,40 @@ import org.bouncycastle.asn1.ASN1Set;
  * @author roman
  *
  */
-public class BouncyCAProfiles {
+public class ProfileRegistry {
 	
-	private Set<BouncyCAProfile> profiles = new HashSet<BouncyCAProfile>();
-	private BouncyCAProfile defaultProfile;
+	private Set<Profile> profiles = new HashSet<Profile>();
+	private Profile defaultProfile;
 
-	public void addProfile(BouncyCAProfile profile) {
+	public void addProfile(Profile profile) {
 		profiles.add(profile);
 	}
 	
-	public void setDefaultProfile(BouncyCAProfile profile) {
+	public void setDefaultProfile(Profile profile) {
 		this.defaultProfile = profile;
 	}
 	
-	public BouncyCAProfile getDefaultProfile() {
+	public Profile getDefaultProfile() {
 		return defaultProfile;
 	}
 	
-	public BouncyCAProfile getProfile(CertificateParameters certificateParameters) {
-		for (BouncyCAProfile profile : profiles)
+	public Profile getProfile(CertificateParameters certificateParameters) {
+		for (Profile profile : profiles)
 			if (profile.isCompatible(certificateParameters))
 				return profile;
 		return null;
 	}
 	
-	public BouncyCAProfile getProfile(ASN1Set csrAttributes) {
-		for (BouncyCAProfile profile : profiles)
+	public Profile getProfile(ASN1Set csrAttributes) {
+		for (Profile profile : profiles)
 			if (profile.isCompatible(csrAttributes))
 				return profile;
 		return null;
 	}
 	
-	public static BouncyCAProfiles getDefaultInstance() {
-		BouncyCAProfiles profiles = new BouncyCAProfiles();
-		StandardBouncyCAProfile userCertificateProfile = new StandardBouncyCAProfile();
+	public static ProfileRegistry getDefaultInstance() {
+		ProfileRegistry profiles = new ProfileRegistry();
+		StandardProfile userCertificateProfile = new StandardProfile();
 		profiles.addProfile(userCertificateProfile);
 		profiles.setDefaultProfile(userCertificateProfile);
 		return profiles;

@@ -14,9 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import java.security.KeyPair;
+
+import me.it_result.ca.CertificateParameters;
 
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -26,7 +28,7 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
  * @author roman
  *
  */
-public interface BouncyCAProfile {
+public interface Profile {
 	
 	public PKCS10CertificationRequest generateCsr(KeyPair keyPair, CertificateParameters certificateParameters, String signatureAlgorithm) throws Exception;
 	public void generateCertificateExtensions(ASN1Set csrAttributes, X509V3CertificateGenerator certificateGenerator);

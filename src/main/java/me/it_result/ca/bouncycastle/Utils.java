@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import java.util.Enumeration;
 
@@ -35,14 +35,14 @@ import org.bouncycastle.asn1.x509.X509Name;
  * @author roman
  *
  */
-public class BouncyCAUtils {
+public class Utils {
 
 	/**
 	 * TODO: Choose an appropriate attribute OID for profile ID
 	 */
 	private static final DERObjectIdentifier PROFILE_ID_ATTR = PKCSObjectIdentifiers.pkcs_9_at_contentType;
 
-	private BouncyCAUtils() {}
+	private Utils() {}
 	
 	public static String generateAlias(X509Name name) {
 		return name.toString(false, X509Name.DefaultSymbols);

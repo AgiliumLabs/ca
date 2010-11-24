@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -27,7 +27,7 @@ import static org.testng.AssertJUnit.*;
  * @author roman
  *
  */
-public class BouncyCAUtilsTest {
+public class UtilsTest {
 
 	/**
 	 * Test method for {@link me.it_result.ca.BouncyCAUtils#asAlias(org.bouncycastle.asn1.x509.X509Name)}.
@@ -37,9 +37,9 @@ public class BouncyCAUtilsTest {
 		String sn = "CN=test, UID=test@test";
 		X500Principal x500sn = new X500Principal("UID=test@test, CN=test");
 		X509Name x509sn = new X509Name(sn);
-		String aliasX500 = BouncyCAUtils.generateAlias(x500sn);
-		String aliasX509 = BouncyCAUtils.generateAlias(x509sn);
-		String aliasStr = BouncyCAUtils.generateAlias(sn);
+		String aliasX500 = Utils.generateAlias(x500sn);
+		String aliasX509 = Utils.generateAlias(x509sn);
+		String aliasStr = Utils.generateAlias(sn);
 		assertEquals(aliasX509, aliasX500);
 		assertEquals(aliasX500, aliasStr);
 	}

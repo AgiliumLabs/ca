@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,6 +25,15 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+
+import me.it_result.ca.AlreadyInitializedException;
+import me.it_result.ca.CAClient;
+import me.it_result.ca.CAException;
+import me.it_result.ca.CANotInitializedException;
+import me.it_result.ca.CertificateParameters;
+import me.it_result.ca.DuplicateSubjectException;
+import me.it_result.ca.InvalidCAException;
+import me.it_result.ca.InvalidCertificateKeyException;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 
@@ -38,7 +47,7 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 	
 	public BouncyCAClient(String keystore, String keyAlgorithm, int keyBits, 
 			int selfSignedCertificateValidityDays, String keystorePassword, 
-			String signatureAlgorithm, BouncyCAProfiles profiles) {
+			String signatureAlgorithm, ProfileRegistry profiles) {
 		super(keystore, keyAlgorithm, keyBits, keystorePassword, signatureAlgorithm, profiles);
 		this.selfSignedCertificateValidityDays = selfSignedCertificateValidityDays;
 	}
@@ -96,14 +105,14 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 			KeyPair keyPair;
 			KeyStore keyStore = loadKeystore();
 			String subjectDN = certificateParameters.getSubjectDN();
-			String alias = BouncyCAUtils.generateAlias(subjectDN);
+			String alias = Utils.generateAlias(subjectDN);
 			boolean containsAlias = keyStore.containsAlias(alias);
 			if (!containsAlias) 
 				keyPair = generateKeyPair();
 			else 
 				keyPair = getKeypair(subjectDN);
 			X509Certificate cert = assembleCertificate(keyPair.getPublic(), keyPair.getPublic(), subjectDN, subjectDN, new BigInteger("1"), false, selfSignedCertificateValidityDays).generate(keyPair.getPrivate());
-			BouncyCAProfile profile = selectProfile(certificateParameters);
+			Profile profile = selectProfile(certificateParameters);
 			PKCS10CertificationRequest csr = profile.generateCsr(keyPair, certificateParameters, signatureAlgorithm);
 			byte[] csrBytes = csr.getEncoded();
 			if (!containsAlias) {
@@ -120,9 +129,9 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 		}
 	}
 
-	private BouncyCAProfile selectProfile(
+	private Profile selectProfile(
 			CertificateParameters certificateParameters) throws CAException {
-		BouncyCAProfile profile = profiles.getProfile(certificateParameters);
+		Profile profile = profiles.getProfile(certificateParameters);
 		if (profile == null)
 			throw new CAException("Certificate profile for " + certificateParameters.getClass() + " is not registered");
 		return profile;
@@ -131,7 +140,7 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 	public synchronized KeyPair getKeypair(String subjectDN) throws CAException {
 		try {
 			KeyStore keystore = loadKeystore();
-			String alias = BouncyCAUtils.generateAlias(subjectDN);
+			String alias = Utils.generateAlias(subjectDN);
 			if (keystore.containsAlias(alias)) {
 				PrivateKey privateKey = (PrivateKey) keystore.getKey(alias, keystorePassword.toCharArray());
 				X509Certificate selfSignedCertificate = (X509Certificate) keystore.getCertificate(alias);
@@ -148,7 +157,7 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 	public synchronized X509Certificate getCertificate(String subjectDN) throws CAException {
 		try {
 			KeyStore keystore = loadKeystore();
-			String alias = BouncyCAUtils.generateAlias(subjectDN);
+			String alias = Utils.generateAlias(subjectDN);
 			if (keystore.containsAlias(alias)) {
 				X509Certificate certificate = (X509Certificate) keystore.getCertificate(alias);
 				return certificate;
@@ -167,7 +176,7 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 		ensureInitialized();
 		try {
 			KeyStore keyStore = loadKeystore();
-			String alias = BouncyCAUtils.generateAlias(certificate.getSubjectX500Principal());
+			String alias = Utils.generateAlias(certificate.getSubjectX500Principal());
 			X509Certificate existingCertificate = (X509Certificate) keyStore.getCertificate(alias);
 			if (!existingCertificate.getPublicKey().equals(certificate.getPublicKey()))
 				throw new InvalidCertificateKeyException("Signed certificate public key does not match expected");

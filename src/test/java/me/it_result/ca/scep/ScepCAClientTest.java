@@ -41,9 +41,9 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Collections;
 
-import me.it_result.ca.BouncyCA;
-import me.it_result.ca.BouncyCAClient;
-import me.it_result.ca.BouncyCAProfiles;
+import me.it_result.ca.bouncycastle.BouncyCA;
+import me.it_result.ca.bouncycastle.BouncyCAClient;
+import me.it_result.ca.bouncycastle.ProfileRegistry;
 import me.it_result.ca.CAClient;
 import me.it_result.ca.DuplicateSubjectException;
 import me.it_result.ca.UserCertificateParameters;
@@ -231,7 +231,7 @@ public class ScepCAClientTest {
 	
 	public static void main(String[] args) {
 		try {
-			BouncyCAProfiles profiles = BouncyCAProfiles.getDefaultInstance();
+			ProfileRegistry profiles = ProfileRegistry.getDefaultInstance();
 			BouncyCA ca = new BouncyCA("target/scep.ca.keystore", "RSA", 1024, 36500, "changeit", "CN=CA", "SHA512withRSA", profiles);
 			ca.destroy();
 			ca.initialize();

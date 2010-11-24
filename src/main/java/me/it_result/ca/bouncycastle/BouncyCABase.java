@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -59,7 +59,7 @@ public abstract class BouncyCABase {
 	protected int keyBits;
 	protected String keystorePassword;
 	protected String signatureAlgorithm;
-	protected BouncyCAProfiles profiles;
+	protected ProfileRegistry profiles;
 
 	protected X509V3CertificateGenerator certGen = new X509V3CertificateGenerator();
 	
@@ -69,7 +69,7 @@ public abstract class BouncyCABase {
 	
 	public BouncyCABase(String keystore, String keyAlgorithm, int keyBits,
 			String keystorePassword, String signatureAlgorithm, 
-			BouncyCAProfiles profiles) {
+			ProfileRegistry profiles) {
 		super();
 		this.keystore = keystore;
 		this.keyAlgorithm = keyAlgorithm;

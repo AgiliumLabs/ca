@@ -20,8 +20,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import me.it_result.ca.BouncyCA;
-import me.it_result.ca.BouncyCAProfiles;
+import me.it_result.ca.bouncycastle.BouncyCA;
+import me.it_result.ca.bouncycastle.ProfileRegistry;
 
 /**
  * TODO: logging
@@ -54,7 +54,7 @@ public class BouncyCAScepServletContextListener implements
 			String keystorePassword = readStringParameter(ctx, "keystorePassword", "changeit");
 			String issuer = readStringParameter(ctx, "issuer", "CN=CA");
 			String signatureAlgorithm = readStringParameter(ctx, "signatureAlgorithm", "SHA512WithRSA");
-			BouncyCA ca = new BouncyCA(keystore, keyAlgorithm, keyBits, validityDays, keystorePassword, issuer, signatureAlgorithm, BouncyCAProfiles.getDefaultInstance());
+			BouncyCA ca = new BouncyCA(keystore, keyAlgorithm, keyBits, validityDays, keystorePassword, issuer, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
 			if (!ca.isInitialized())
 				ca.initialize();
 			CARepository.setCA(ca);

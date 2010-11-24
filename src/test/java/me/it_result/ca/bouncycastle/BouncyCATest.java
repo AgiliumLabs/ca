@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
@@ -23,6 +23,10 @@ import java.io.File;
 import java.math.BigInteger;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+
+import me.it_result.ca.CA;
+import me.it_result.ca.CATest;
+import me.it_result.ca.X509Assertions;
 
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.jce.X509KeyUsage;
@@ -56,7 +60,7 @@ public class BouncyCATest extends CATest {
 		this.jdkSignatureAlgorithm = jdkSignatureAlgorithm;
 		new File(KEYSTORE).delete();
 		new File(KEYSTORE_PROPS).delete();
-		ca = new BouncyCA(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, bouncyCastleProviderSignatureAlgorithm, BouncyCAProfiles.getDefaultInstance());
+		ca = new BouncyCA(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, bouncyCastleProviderSignatureAlgorithm, ProfileRegistry.getDefaultInstance());
 	}
 	
 	@AfterMethod

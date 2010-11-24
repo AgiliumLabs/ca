@@ -21,9 +21,9 @@ import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
-import me.it_result.ca.BouncyCA;
-import me.it_result.ca.BouncyCAClient;
-import me.it_result.ca.BouncyCAProfiles;
+import me.it_result.ca.bouncycastle.BouncyCA;
+import me.it_result.ca.bouncycastle.BouncyCAClient;
+import me.it_result.ca.bouncycastle.ProfileRegistry;
 import me.it_result.ca.CA;
 import me.it_result.ca.CAClient;
 import me.it_result.ca.UserCertificateParameters;
@@ -93,12 +93,12 @@ public class ScepCAClientIntegrationTest {
 
 	private void destroyCa(String keyAlgorithm, int keyBits,
 			String signatureAlgorithm) throws Exception {
-		CA ca = new BouncyCA(CA_KEYSTORE, "RSA", keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", signatureAlgorithm, BouncyCAProfiles.getDefaultInstance());
+		CA ca = new BouncyCA(CA_KEYSTORE, "RSA", keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", signatureAlgorithm, ProfileRegistry.getDefaultInstance());
 		ca.destroy();
 	}
 
 	public ScepCAClient initializeScepClient(CA ca, String keyAlgorithm, int keyBits, String signatureAlgorithm) throws Exception {
-		CAClient caClient = new BouncyCAClient(CLIENT_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, BouncyCAProfiles.getDefaultInstance());
+		CAClient caClient = new BouncyCAClient(CLIENT_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
 		URL scepUrl = new URL(SCEP_URL);
 		X509Certificate caCertificate = ca.getCACertificate();
 		CertificateFingerprint caFingerprint = CertificateFingerprint.calculate(caCertificate);

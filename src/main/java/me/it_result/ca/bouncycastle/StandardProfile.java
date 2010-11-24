@@ -14,9 +14,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import java.security.KeyPair;
+
+import me.it_result.ca.CAException;
+import me.it_result.ca.CertificateParameters;
+import me.it_result.ca.CertificateParametersBase;
+import me.it_result.ca.ServerCertificateParameters;
+import me.it_result.ca.UserCertificateParameters;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Set;
@@ -33,7 +39,7 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
  * @author roman
  *
  */
-public class StandardBouncyCAProfile implements BouncyCAProfile {
+public class StandardProfile implements Profile {
 
 	private static final String SERVER_PROFILE = "ServerCertificate";
 	private static final String CLIENT_PROFILE = "ClientCertificate";
@@ -58,11 +64,11 @@ public class StandardBouncyCAProfile implements BouncyCAProfile {
 		ASN1EncodableVector attributeVector = new ASN1EncodableVector();
 		// challengePassword
 		if (params.getChallengePassword() != null) {
-			Attribute passwordAttribute = BouncyCAUtils.generateChallengePasswordAttribute(params.getChallengePassword());
+			Attribute passwordAttribute = Utils.generateChallengePasswordAttribute(params.getChallengePassword());
 			attributeVector.add(passwordAttribute);
 		}
 		String profileId = certificateParameters instanceof ServerCertificateParameters ? SERVER_PROFILE : CLIENT_PROFILE;
-		Attribute profileIdAttribute = BouncyCAUtils.generateProfileIdAttribute(profileId);
+		Attribute profileIdAttribute = Utils.generateProfileIdAttribute(profileId);
 		attributeVector.add(profileIdAttribute);
 		DERSet attributes = new DERSet(attributeVector); 
 		PKCS10CertificationRequest csr = new PKCS10CertificationRequest(signatureAlgorithm, new X509Name(certificateParameters.getSubjectDN()), keyPair.getPublic(), attributes, keyPair.getPrivate());
@@ -71,12 +77,12 @@ public class StandardBouncyCAProfile implements BouncyCAProfile {
 
 	@Override
 	public boolean isCompatible(ASN1Set csrAttributes) {
-		String profileId = BouncyCAUtils.extractProfileId(csrAttributes, CLIENT_PROFILE);
+		String profileId = Utils.extractProfileId(csrAttributes, CLIENT_PROFILE);
 		return profileId != null && (profileId.equals(SERVER_PROFILE) || profileId.equals(CLIENT_PROFILE));
 	}
 
 	private boolean isServerProfile(ASN1Set csrAttributes) {
-		String profileId = BouncyCAUtils.extractProfileId(csrAttributes, CLIENT_PROFILE);
+		String profileId = Utils.extractProfileId(csrAttributes, CLIENT_PROFILE);
 		return profileId.equals(SERVER_PROFILE);
 	}
 

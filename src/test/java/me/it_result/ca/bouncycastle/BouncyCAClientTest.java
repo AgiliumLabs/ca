@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
@@ -25,6 +25,13 @@ import java.math.BigInteger;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+
+import me.it_result.ca.AlreadyInitializedException;
+import me.it_result.ca.CA;
+import me.it_result.ca.CAClient;
+import me.it_result.ca.CAClientTest;
+import me.it_result.ca.CAException;
+import me.it_result.ca.X509Assertions;
 
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -55,7 +62,7 @@ public class BouncyCAClientTest extends CAClientTest {
 	@Parameters({"keyAlgorithm", "keyBits", "bouncyCastleProviderSignatureAlgorithm", "jdkSignatureAlgorithm"})
 	public void setUp(@Optional("RSA") String keyAlgorithm, @Optional("1024") int keyBits, @Optional("MD5WithRSA") String signatureAlgorithm, @Optional("MD5withRSA") String jdkSignatureAlgorithm) throws AlreadyInitializedException, CAException {
 		this.jdkSignatureAlgorithm = jdkSignatureAlgorithm;
-		BouncyCAProfiles profiles = BouncyCAProfiles.getDefaultInstance();
+		ProfileRegistry profiles = ProfileRegistry.getDefaultInstance();
 		ca = new BouncyCA(CA_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", jdkSignatureAlgorithm, profiles);
 		client = new BouncyCAClient(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, profiles);
 		client.destroy();

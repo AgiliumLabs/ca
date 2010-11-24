@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package me.it_result.ca;
+package me.it_result.ca.bouncycastle;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +35,11 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import me.it_result.ca.AlreadyInitializedException;
+import me.it_result.ca.CA;
+import me.it_result.ca.CAException;
+import me.it_result.ca.CANotInitializedException;
+
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -50,7 +55,7 @@ public class BouncyCA extends BouncyCABase implements CA {
 
 	public BouncyCA(String keystore, String keyAlgorithm, int keyBits,
 			int validityDays, String keystorePassword, String issuer, 
-			String signatureAlgorithm, BouncyCAProfiles profiles) {
+			String signatureAlgorithm, ProfileRegistry profiles) {
 		super(keystore, keyAlgorithm, keyBits, keystorePassword,
 				signatureAlgorithm, profiles);
 		this.validityDays = validityDays;
@@ -155,10 +160,10 @@ public class BouncyCA extends BouncyCABase implements CA {
 			BigInteger serialNumber = nextSerialNumber();
 			assembleCertificate(publicKey, caPublicKey, sn.toString(), issuer, serialNumber, false, validityDays);
 			ASN1Set csrAttributes = csr.getCertificationRequestInfo().getAttributes();
-			BouncyCAProfile profile = selectProfile(csrAttributes);
+			Profile profile = selectProfile(csrAttributes);
 			profile.generateCertificateExtensions(csrAttributes, certGen);
 			X509Certificate cert = certGen.generate(caPrivateKey);
-			String alias = BouncyCAUtils.generateAlias(sn);
+			String alias = Utils.generateAlias(sn);
 			keyStore.setCertificateEntry(alias, cert);
 			saveKeystore(keyStore);
 			incrementSerialNumber(serialNumber);
@@ -170,8 +175,8 @@ public class BouncyCA extends BouncyCABase implements CA {
 		}
 	}
 
-	private BouncyCAProfile selectProfile(ASN1Set attributes) throws CAException {
-		BouncyCAProfile profile = profiles.getProfile(attributes);
+	private Profile selectProfile(ASN1Set attributes) throws CAException {
+		Profile profile = profiles.getProfile(attributes);
 		if (profile == null)
 			profile = profiles.getDefaultProfile();
 		if (profile == null)
