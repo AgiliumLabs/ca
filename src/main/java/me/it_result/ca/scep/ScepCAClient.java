@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.it_result.ca.CAClient;
 import me.it_result.ca.CAException;
-import me.it_result.ca.CANotInitializedException;
+import me.it_result.ca.NotInitializedException;
 import me.it_result.ca.CertificateParameters;
 import me.it_result.ca.DuplicateSubjectException;
 import me.it_result.ca.InvalidCAException;
@@ -157,7 +157,7 @@ public class ScepCAClient {
 		return state;
 	}
 
-	private X509Certificate extractCertificate(CertStore certStore, PublicKey certificateKey) throws CertStoreException, CANotInitializedException, InvalidCertificateKeyException, InvalidCAException, CAException {
+	private X509Certificate extractCertificate(CertStore certStore, PublicKey certificateKey) throws CertStoreException, NotInitializedException, InvalidCertificateKeyException, InvalidCAException, CAException {
 		X509CertSelector certSelector = new X509CertSelector();
 		certSelector.setSubjectPublicKey(certificateKey);
 		Collection<? extends Certificate> certificates = certStore.getCertificates(certSelector);

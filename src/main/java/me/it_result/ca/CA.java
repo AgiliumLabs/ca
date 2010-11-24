@@ -63,31 +63,31 @@ public interface CA {
 	 * 
 	 * @return a signed certificate
 	 * 
-	 * @throws CANotInitializedException in case CA is not initialized yet
+	 * @throws NotInitializedException in case CA is not initialized yet
 	 * @throws DuplicateSubjectException in case the certificate with the same
 	 * subject name is signed already
 	 * @throws CAException
 	 */
-	public X509Certificate signCertificate(byte[] csrBytes) throws CANotInitializedException, DuplicateSubjectException, CAException;
+	public X509Certificate signCertificate(byte[] csrBytes) throws NotInitializedException, DuplicateSubjectException, CAException;
 
 	/**
 	 * Provides an access to the CA certificate
 	 * 
 	 * @return the CA certificate
 	 * 
-	 * @throws CANotInitializedException in case CA is not initialized yet
+	 * @throws NotInitializedException in case CA is not initialized yet
 	 * @throws CAException
 	 */
-	public X509Certificate getCACertificate() throws CANotInitializedException, CAException;
+	public X509Certificate getCACertificate() throws NotInitializedException, CAException;
 
 	/**
 	 * Provides an access to the CA keypair
 	 * 
 	 * @return the CA keypair
 	 * 
-	 * @throws CANotInitializedException in case CA is not initialized yet
+	 * @throws NotInitializedException in case CA is not initialized yet
 	 * @throws CAException
 	 */
-	public KeyPair getCAKeypair() throws CANotInitializedException, CAException;
+	public KeyPair getCAKeypair() throws NotInitializedException, CAException;
 
 }

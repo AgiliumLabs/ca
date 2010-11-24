@@ -86,8 +86,8 @@ public abstract class CAClientTest {
 		// Then CANotInitializedException should be thrown
 		try {
 			client().getCaCertificate();
-			fail("CANotInitializedException expected");
-		} catch (CANotInitializedException e) {}
+			fail("NotInitializedException expected");
+		} catch (NotInitializedException e) {}
 	}
 
 	@Test
@@ -147,8 +147,8 @@ public abstract class CAClientTest {
 		X509Certificate cert = ca().signCertificate(csr);
 		try {
 			client().storeCertificate(cert);
-			fail("CANotInitializedException expected");
-		} catch (CANotInitializedException e) {
+			fail("NotInitializedException expected");
+		} catch (NotInitializedException e) {
 			// Then CANotInitializedException is thrown
 		}
 	}

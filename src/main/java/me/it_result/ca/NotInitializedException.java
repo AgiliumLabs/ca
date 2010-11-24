@@ -20,7 +20,7 @@ package me.it_result.ca;
  * @author roman
  *
  */
-public class CANotInitializedException extends CAException {
+public class NotInitializedException extends CAException {
 
 	/**
 	 * 
@@ -30,7 +30,7 @@ public class CANotInitializedException extends CAException {
 	/**
 	 * 
 	 */
-	public CANotInitializedException() {
+	public NotInitializedException() {
 		super();
 	}
 
@@ -38,21 +38,21 @@ public class CANotInitializedException extends CAException {
 	 * @param message
 	 * @param cause
 	 */
-	public CANotInitializedException(String message, Throwable cause) {
+	public NotInitializedException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
 	/**
 	 * @param message
 	 */
-	public CANotInitializedException(String message) {
+	public NotInitializedException(String message) {
 		super(message);
 	}
 
 	/**
 	 * @param cause
 	 */
-	public CANotInitializedException(Throwable cause) {
+	public NotInitializedException(Throwable cause) {
 		super(cause);
 	}
 

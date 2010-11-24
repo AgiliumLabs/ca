@@ -29,7 +29,7 @@ import java.security.cert.X509Certificate;
 import me.it_result.ca.AlreadyInitializedException;
 import me.it_result.ca.CAClient;
 import me.it_result.ca.CAException;
-import me.it_result.ca.CANotInitializedException;
+import me.it_result.ca.NotInitializedException;
 import me.it_result.ca.CertificateParameters;
 import me.it_result.ca.DuplicateSubjectException;
 import me.it_result.ca.InvalidCAException;
@@ -201,7 +201,7 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 
 	private void ensureInitialized() throws CAException {
 		if (!isInitialized())
-			throw new CANotInitializedException("CA is not initialized yet.");
+			throw new NotInitializedException("CA is not initialized yet.");
 	}
 	
 	@Override

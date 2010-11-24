@@ -57,11 +57,11 @@ public interface CAClient {
 	/**
 	 * @return CA certificate
 	 * 
-	 * @throws CANotInitializedException in case the instance was not 
+	 * @throws NotInitializedException in case the instance was not 
 	 * initialized yet
 	 * @throws CAException
 	 */
-	public X509Certificate getCaCertificate() throws CANotInitializedException, CAException;
+	public X509Certificate getCaCertificate() throws NotInitializedException, CAException;
 
 	/**
 	 * Generates a CSR given a subject. If the keypair is already generated for
@@ -106,7 +106,7 @@ public interface CAClient {
 	 *  
 	 * @param certificate the signed certificate
 	 * 
-	 * @throws CANotInitializedException in case the CA certificate is not 
+	 * @throws NotInitializedException in case the CA certificate is not 
 	 * assigned yet to this client
 	 * @throws InvalidCertificateKeyException in case the signed certificate 
 	 * public key does not matches the keypair used for the certificate subject
@@ -115,6 +115,6 @@ public interface CAClient {
 	 * this client does not belong to
 	 * @throws CAException
 	 */
-	public void storeCertificate(X509Certificate certificate) throws CANotInitializedException, InvalidCertificateKeyException, InvalidCAException, CAException;
+	public void storeCertificate(X509Certificate certificate) throws NotInitializedException, InvalidCertificateKeyException, InvalidCAException, CAException;
 	
 }

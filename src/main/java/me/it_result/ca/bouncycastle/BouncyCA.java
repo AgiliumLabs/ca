@@ -38,7 +38,7 @@ import java.util.Set;
 import me.it_result.ca.AlreadyInitializedException;
 import me.it_result.ca.CA;
 import me.it_result.ca.CAException;
-import me.it_result.ca.CANotInitializedException;
+import me.it_result.ca.NotInitializedException;
 
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.x509.X509Name;
@@ -238,7 +238,7 @@ public class BouncyCA extends BouncyCABase implements CA {
 	}
 
 	@Override
-	public KeyPair getCAKeypair() throws CANotInitializedException, CAException {
+	public KeyPair getCAKeypair() throws NotInitializedException, CAException {
 		ensureInitialized();
 		try {
 			KeyStore keyStore = loadKeystore();
