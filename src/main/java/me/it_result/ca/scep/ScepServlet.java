@@ -16,7 +16,6 @@
  */
 package me.it_result.ca.scep;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.cert.X509CRL;
@@ -25,10 +24,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
