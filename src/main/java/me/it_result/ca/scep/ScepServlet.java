@@ -25,12 +25,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
 
 import org.bouncycastle.asn1.pkcs.CertificationRequest;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.X509Principal;
 import org.jscep.response.Capability;
+import org.jscep.transaction.FailInfo;
 import org.jscep.transaction.OperationFailureException;
 
 /**
@@ -43,6 +45,8 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	 * 
 	 */
 	private static final long serialVersionUID = -1904719024430363584L;
+	
+	protected static final String DEFAULT_CA_ID = "default";
 
 	@Override
 	protected Set<Capability> doCapabilities(String identifier) {
@@ -60,14 +64,26 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	protected List<X509Certificate> doEnroll(
 			CertificationRequest certificationRequest)
 			throws OperationFailureException {
+		checkAuthorization(certificationRequest);
 		try {
-			// TODO: Verify SCEP password 
 			byte[] csrBytes = certificationRequest.getEncoded();
 			X509Certificate certificate = ca().signCertificate(csrBytes);
 			return Collections.singletonList(certificate);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private void checkAuthorization(CertificationRequest certificationRequest) throws OperationFailureException {
+		Authorization authz = getAuthorization();
+		boolean authorized;
+		try {
+			authorized = authz.isAuthorized(certificationRequest);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		if (!authorized) 
+			throw new OperationFailureException(FailInfo.badMessageCheck);
 	}
 
 	@Override
@@ -138,7 +154,17 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	}
 	
 	protected CA ca() {
-		return CARepository.getCA();
+		ScepServer scepServer = getScepServer();
+		return scepServer.getCA(DEFAULT_CA_ID);
+	}
+
+	protected ScepServer getScepServer() {
+		return ScepServer.SERVER;
+	}
+
+	protected Authorization getAuthorization() {
+		ScepServer scepServer = getScepServer();
+		return scepServer.getAuthorization(DEFAULT_CA_ID);
 	}
 
 }

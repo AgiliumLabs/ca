@@ -16,24 +16,39 @@
  */
 package me.it_result.ca.scep;
 
+import java.util.Map;
+
+import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
 
 /**
  * @author roman
  *
  */
-public class CARepository {
+public class ScepServer {
 
-	private static CA ca;
+	protected static ScepServer SERVER;
 	
-	private CARepository() {}
+	private Map<String, CA> caMap;
+	private Map<String, Authorization> authorizationMap;
 	
-	protected static void setCA(CA ca) {
-		CARepository.ca = ca;
+	/**
+	 * @param caMap
+	 * @param authorizationMap
+	 */
+	public ScepServer(Map<String, CA> caMap,
+			Map<String, Authorization> authorizationMap) {
+		super();
+		this.caMap = caMap;
+		this.authorizationMap = authorizationMap;
 	}
 	
-	public static CA getCA() {
-		return ca;
+	public Authorization getAuthorization(String caIdentifier) {
+		return authorizationMap.get(caIdentifier);
+	}
+	
+	public CA getCA(String caIdentifier) {
+		return caMap.get(caIdentifier);
 	}
 	
 }

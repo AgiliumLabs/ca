@@ -23,9 +23,12 @@ import java.util.Set;
 
 import me.it_result.ca.bouncycastle.BouncyCA;
 import me.it_result.ca.bouncycastle.BouncyCAClient;
+import me.it_result.ca.bouncycastle.ChallengePasswordAuthorization;
 import me.it_result.ca.bouncycastle.ProfileRegistry;
+import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
 import me.it_result.ca.CAClient;
+import me.it_result.ca.CAException;
 import me.it_result.ca.UserCertificateParameters;
 
 import org.bouncycastle.jce.X509Principal;
@@ -67,10 +70,19 @@ public class ScepCAClientIntegrationTest {
 	public void setUp(@Optional("RSA") String keyAlgorithm, @Optional("1024") int keyBits, @Optional("MD5WithRSA") String signatureAlgorithm, @Optional("MD5withRSA") String jdkSignatureAlgorithm) throws Exception {
 		destroyCa(jdkSignatureAlgorithm, keyBits, jdkSignatureAlgorithm);
 		scepServer = startScepServer(keyAlgorithm, keyBits, signatureAlgorithm);
-		CA ca = CARepository.getCA();
+		CA ca = getCa();
 		scepClient = initializeScepClient(ca, keyAlgorithm, keyBits, signatureAlgorithm);
+		((ChallengePasswordAuthorization)getAuthorization()).storePassword(SUBJECT_DN, SCEP_PASSWORD);
 	}
 	
+	private CA getCa() {
+		return ScepServer.SERVER.getCA(ScepServlet.DEFAULT_CA_ID);	
+	}
+	
+	private Authorization getAuthorization() {
+		return ScepServer.SERVER.getAuthorization(ScepServlet.DEFAULT_CA_ID);	
+	}
+
 	private Server startScepServer(String keyAlgorithm, int keyBits, String signatureAlgorithm) throws Exception {
 		Server server = new Server(SCEP_PORT);
 		ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -79,13 +91,13 @@ public class ScepCAClientIntegrationTest {
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
         root.addServlet(new ServletHolder(new ScepServlet()), SERVLET_PATH);
         root.addEventListener(new BouncyCAScepServletContextListener());
-        root.setAttribute("keystore", CA_KEYSTORE);
-        root.setAttribute("keyAlgorithm", keyAlgorithm);
-        root.setAttribute("keyBits", keyBits);
-        root.setAttribute("validityDays", VALIDITY_DAYS);
-        root.setAttribute("keystorePassword", KEYSTORE_PASSWORD);
-        root.setAttribute("issuer", ISSUER);
-        root.setAttribute("signatureAlgorithm", signatureAlgorithm);
+        root.getInitParams().put("keystore", CA_KEYSTORE);
+        root.getInitParams().put("keyAlgorithm", keyAlgorithm);
+        root.getInitParams().put("keyBits", Integer.toString(keyBits));
+        root.getInitParams().put("validityDays", Integer.toString(VALIDITY_DAYS));
+        root.getInitParams().put("keystorePassword", KEYSTORE_PASSWORD);
+        root.getInitParams().put("issuer", ISSUER);
+        root.getInitParams().put("signatureAlgorithm", signatureAlgorithm);
 
         server.start();
         return server;
@@ -112,8 +124,8 @@ public class ScepCAClientIntegrationTest {
 			scepServer.stop();
 		} catch (Exception e) {}
 		try {
-			if (CARepository.getCA() != null)
-				CARepository.getCA().destroy();
+			if (getCa() != null)
+				getCa().destroy();
 			scepClient.getCaClient().destroy();
 		} catch (Exception e) {}
 		new File(CA_KEYSTORE).delete();
@@ -130,7 +142,7 @@ public class ScepCAClientIntegrationTest {
 		params.setSubjectDN(SUBJECT_DN);
 		scepClient.enrollCertificate(params);
 		// The certificate should be enrolled by the server
-		CA ca = CARepository.getCA();
+		CA ca = getCa();
 		Set<X509Certificate> certificates = ca.listCertificates();
 		assertEquals(1, certificates.size());
 		assertEquals(new X509Principal(SUBJECT_DN), new X509Principal(certificates.iterator().next().getSubjectX500Principal().getName()));
@@ -139,9 +151,16 @@ public class ScepCAClientIntegrationTest {
 	}
 	
 	@Test
-	public void testEnollmentInvalidPassword() {
+	public void testEnollmentInvalidPassword() throws CAException {
 		// When enrollCertificate is invoked with an invalid password
+		UserCertificateParameters params = new UserCertificateParameters();
+		params.setChallengePassword("invalid");
+		params.setSubjectDN(SUBJECT_DN);
 		// The server must return a failure instead of enrolling the certificate
+		try {
+			scepClient.enrollCertificate(params);
+			fail("ScepFailureException expected");
+		} catch (ScepFailureException e) {}
 	}
 	
 }
