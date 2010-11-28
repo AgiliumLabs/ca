@@ -16,6 +16,7 @@
  */
 package me.it_result.ca.scep;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.cert.X509CRL;
@@ -24,6 +25,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
@@ -46,8 +51,6 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	 */
 	private static final long serialVersionUID = -1904719024430363584L;
 	
-	protected static final String DEFAULT_CA_ID = "default";
-
 	@Override
 	protected Set<Capability> doCapabilities(String identifier) {
 		Set<Capability> capabilities = new HashSet<Capability>();
@@ -155,16 +158,17 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	
 	protected CA ca() {
 		ScepServer scepServer = getScepServer();
-		return scepServer.getCA(DEFAULT_CA_ID);
+		return scepServer.getCA();
 	}
 
 	protected ScepServer getScepServer() {
-		return ScepServer.SERVER;
+		ScepServer server = (ScepServer) getServletContext().getAttribute(ScepServer.SERVER_ATTRIBUTE);
+		return server;
 	}
 
 	protected Authorization getAuthorization() {
 		ScepServer scepServer = getScepServer();
-		return scepServer.getAuthorization(DEFAULT_CA_ID);
+		return scepServer.getAuthorization();
 	}
 
 }

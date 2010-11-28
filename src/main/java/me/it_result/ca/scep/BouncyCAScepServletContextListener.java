@@ -16,14 +16,11 @@
  */
 package me.it_result.ca.scep;
 
-import java.util.Collections;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import me.it_result.ca.Authorization;
-import me.it_result.ca.CA;
 import me.it_result.ca.bouncycastle.BouncyCA;
 import me.it_result.ca.bouncycastle.ChallengePasswordAuthorization;
 import me.it_result.ca.bouncycastle.ProfileRegistry;
@@ -63,8 +60,8 @@ public class BouncyCAScepServletContextListener implements
 			if (!ca.isInitialized())
 				ca.initialize();
 			Authorization authz = new ChallengePasswordAuthorization(keystore + ".passwords");
-			ScepServer server = new ScepServer(Collections.singletonMap(ScepServlet.DEFAULT_CA_ID, (CA) ca), Collections.singletonMap(ScepServlet.DEFAULT_CA_ID, authz));
-			ScepServer.SERVER = server;
+			ScepServer server = new ScepServer(ca, authz);
+			ctx.setAttribute(ScepServer.SERVER_ATTRIBUTE, server);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

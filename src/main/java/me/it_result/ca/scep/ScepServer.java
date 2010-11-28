@@ -16,8 +16,6 @@
  */
 package me.it_result.ca.scep;
 
-import java.util.Map;
-
 import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
 
@@ -27,28 +25,27 @@ import me.it_result.ca.CA;
  */
 public class ScepServer {
 
-	protected static ScepServer SERVER;
+	public static final String SERVER_ATTRIBUTE = "scepServer";
 	
-	private Map<String, CA> caMap;
-	private Map<String, Authorization> authorizationMap;
+	private CA ca;
+	private Authorization authorization;
 	
 	/**
-	 * @param caMap
-	 * @param authorizationMap
+	 * @param ca
+	 * @param authorization
 	 */
-	public ScepServer(Map<String, CA> caMap,
-			Map<String, Authorization> authorizationMap) {
+	public ScepServer(CA ca, Authorization authorization) {
 		super();
-		this.caMap = caMap;
-		this.authorizationMap = authorizationMap;
+		this.ca = ca;
+		this.authorization = authorization;
 	}
 	
-	public Authorization getAuthorization(String caIdentifier) {
-		return authorizationMap.get(caIdentifier);
+	public Authorization getAuthorization() {
+		return authorization;
 	}
 	
-	public CA getCA(String caIdentifier) {
-		return caMap.get(caIdentifier);
+	public CA getCA() {
+		return ca;
 	}
 	
 }
