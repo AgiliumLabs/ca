@@ -65,7 +65,7 @@ public class Utils {
 				if (attr.getObjectAt(0).equals(PROFILE_ID_ATTR)) {
 					ASN1Set profileIdSet = (ASN1Set) attr.getObjectAt(1);
 					DERPrintableString profileIdValue = (DERPrintableString) profileIdSet.getObjectAt(0);
-					profileId = ((DERPrintableString) profileIdValue).getString();
+					profileId = profileIdValue.getString();
 					break;
 				}
 			}
@@ -84,6 +84,23 @@ public class Utils {
 		passwordVector.add(new DERPrintableString(challengePassword));
 		Attribute passwordAttribute = new Attribute(PKCSObjectIdentifiers.pkcs_9_at_challengePassword, new DERSet(passwordVector));
 		return passwordAttribute;
+	}
+
+	public static String extractChallengePassword(ASN1Set csrAttributes) {
+		String challengePassword = null;
+		try {
+			Enumeration<?> attrEnum = csrAttributes.getObjects();
+			while (attrEnum.hasMoreElements()) {
+				DERSequence attr = (DERSequence) attrEnum.nextElement();
+				if (attr.getObjectAt(0).equals(PKCSObjectIdentifiers.pkcs_9_at_challengePassword)) {
+					ASN1Set passwordSet = (ASN1Set) attr.getObjectAt(1);
+					DERPrintableString passwordValue = (DERPrintableString) passwordSet.getObjectAt(0);
+					challengePassword = passwordValue.getString();
+					break;
+				}
+			}
+		} catch (Exception e) {}
+		return challengePassword;
 	}
 	
 }
