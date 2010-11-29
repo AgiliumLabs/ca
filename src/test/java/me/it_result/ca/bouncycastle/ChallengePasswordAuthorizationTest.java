@@ -28,6 +28,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
+import me.it_result.ca.AuthorizationOutcome;
+
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.util.encoders.Base64;
 import org.testng.annotations.AfterMethod;
@@ -72,10 +74,10 @@ public class ChallengePasswordAuthorizationTest {
 	public void testAuthorizationCorrectPassword() throws Exception {
 		authz.storePassword(SUBJECT, "correct");
 		// authorization should succeed
-		assertTrue(authz.isAuthorized(csr));
+		assertEquals(AuthorizationOutcome.ACCEPT, authz.isAuthorized(csr));
 		// password can be used only once
 		authz.certificateEnrolled(signedCertificate);
-		assertFalse(authz.isAuthorized(csr));
+		assertEquals(AuthorizationOutcome.REJECT, authz.isAuthorized(csr));
 	}
 	
 	private X509Certificate readCertificate(String base64EncodedCertificate) throws CertificateException {
@@ -93,20 +95,20 @@ public class ChallengePasswordAuthorizationTest {
 	public void testAuthorizationInvalidPassword() throws Exception {
 		authz.storePassword(SUBJECT, "invalid");
 		// authorization should fail
-		assertFalse(authz.isAuthorized(csr));
+		assertEquals(AuthorizationOutcome.REJECT, authz.isAuthorized(csr));
 	}
 	
 	@Test
 	public void testAuthorizationPasswordNotSet() throws Exception {
 		// authorization should fail if password is not set
-		assertFalse(authz.isAuthorized(csr));
+		assertEquals(AuthorizationOutcome.REJECT, authz.isAuthorized(csr));
 	}
 	
 	@Test
 	public void testAuthorizationCSRPasswordNotSet() throws Exception {
 		PKCS10CertificationRequest nullPasswordCsr = readCsr("MIIBcjCB3AIBADARMQ8wDQYDVQQDDAZjbGllbnQwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJ1+ZewUO3xm06YWUqcRrdJaSSKMepwuosuM7pUqF5NywphV6Uw7o+f0ilLgENVONss1D3HrXgdTIB5AV5YlJMV4C46K5sZxUvGeMYSua8uqe6iOi+Djq2cGPN6sroPTkV83rgx4Jz3YViGlCizif4ISEahHF5wUjO5AAKwYokj9AgMBAAGgIjAgBgkqhkiG9w0BCQMxExMRQ2xpZW50Q2VydGlmaWNhdGUwDQYJKoZIhvcNAQENBQADgYEAAQ28YbeIQOOFq7OuyRMcoErb1QtXn4vevGPoAX3RZcXqtEuAxopyKJMsiri9yFokgdAoLj60MzevJTDuwX2YNKbSg2tiVkVMwfcmzeD/hdnm9t+dB+XVhyiAAm/bTletJ8gKfxVkafTQyYuldRKRPlIOm6NZp8PAygCOO2VMT8o=");
 		// authorization should fail if password is not set
-		assertFalse(authz.isAuthorized(nullPasswordCsr));
+		assertEquals(AuthorizationOutcome.REJECT, authz.isAuthorized(nullPasswordCsr));
 	}
 	
 }
