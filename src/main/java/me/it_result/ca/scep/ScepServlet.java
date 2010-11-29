@@ -152,18 +152,18 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	}
 	
 	protected CA ca() {
-		ScepServer scepServer = getScepServer();
-		return scepServer.getCA();
+		ScepServerContext ctx = getScepServerContext();
+		return ctx.getCA();
 	}
 
-	protected ScepServer getScepServer() {
-		ScepServer server = (ScepServer) getServletContext().getAttribute(ScepServer.SERVER_ATTRIBUTE);
-		return server;
+	protected ScepServerContext getScepServerContext() {
+		ScepServerContext ctx = (ScepServerContext) getServletContext().getAttribute(ScepServerContext.CONTEXT_ATTRIBUTE);
+		return ctx;
 	}
 
 	protected Authorization getAuthorization() {
-		ScepServer scepServer = getScepServer();
-		return scepServer.getAuthorization();
+		ScepServerContext ctx = getScepServerContext();
+		return ctx.getAuthorization();
 	}
 
 }

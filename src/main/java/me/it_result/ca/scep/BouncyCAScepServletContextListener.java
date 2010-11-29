@@ -60,8 +60,8 @@ public class BouncyCAScepServletContextListener implements
 			if (!ca.isInitialized())
 				ca.initialize();
 			Authorization authz = new ChallengePasswordAuthorization(keystore + ".passwords");
-			ScepServer server = new ScepServer(ca, authz);
-			ctx.setAttribute(ScepServer.SERVER_ATTRIBUTE, server);
+			ScepServerContext scepServerContext = new ScepServerContext(ca, authz);
+			ctx.setAttribute(ScepServerContext.CONTEXT_ATTRIBUTE, scepServerContext);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

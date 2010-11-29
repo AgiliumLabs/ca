@@ -34,10 +34,6 @@ import me.it_result.ca.bouncycastle.ChallengePasswordAuthorization;
 import me.it_result.ca.bouncycastle.ProfileRegistry;
 
 import org.bouncycastle.jce.X509Principal;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Optional;
@@ -62,51 +58,26 @@ public class ScepCAClientIntegrationTest {
 	private static final String SUBJECT_DN = "CN=client";
 	private static final String SCEP_PASSWORD = "password";
 	
-	private Server server;
+	private ScepServer server;
 	private ScepCAClient scepClient;
-	private CA ca;
-	private ChallengePasswordAuthorization authorization;
 	
 	@BeforeMethod
 	@Parameters({"keyAlgorithm", "keyBits", "bouncyCastleProviderSignatureAlgorithm", "jdkSignatureAlgorithm"})
 	public void setUp(@Optional("RSA") String keyAlgorithm, @Optional("1024") int keyBits, @Optional("MD5WithRSA") String signatureAlgorithm, @Optional("MD5withRSA") String jdkSignatureAlgorithm) throws Exception {
-		ca = new BouncyCA(CA_KEYSTORE, "RSA", keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", signatureAlgorithm, ProfileRegistry.getDefaultInstance());
-		destroyCa(jdkSignatureAlgorithm, keyBits, jdkSignatureAlgorithm);
-		server = startScepServer(keyAlgorithm, keyBits, signatureAlgorithm);
-		scepClient = initializeScepClient(ca, keyAlgorithm, keyBits, signatureAlgorithm);
-		authorization = new ChallengePasswordAuthorization(CA_KEYSTORE + ".passwords");
+		CA ca = new BouncyCA(CA_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
+		ca.destroy();
+		ca.initialize();
+		ChallengePasswordAuthorization authorization = new ChallengePasswordAuthorization(CA_KEYSTORE + ".passwords");
 		authorization.storePassword(SUBJECT_DN, SCEP_PASSWORD);
+		server = new ScepServer(ca, authorization, SCEP_PORT);
+		server.start();
+		scepClient = initializeScepClient(ca, keyAlgorithm, keyBits, signatureAlgorithm);
 	}
 	
 	private CA getCa() {
-		return ca;
+		return server.getCa();
 	}
 	
-	private Server startScepServer(String keyAlgorithm, int keyBits, String signatureAlgorithm) throws Exception {
-		Server server = new Server(SCEP_PORT);
-		ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(contexts);
-
-        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
-        root.addServlet(new ServletHolder(new ScepServlet()), SERVLET_PATH);
-        root.addEventListener(new BouncyCAScepServletContextListener());
-        root.getInitParams().put("keystore", CA_KEYSTORE);
-        root.getInitParams().put("keyAlgorithm", keyAlgorithm);
-        root.getInitParams().put("keyBits", Integer.toString(keyBits));
-        root.getInitParams().put("validityDays", Integer.toString(VALIDITY_DAYS));
-        root.getInitParams().put("keystorePassword", KEYSTORE_PASSWORD);
-        root.getInitParams().put("issuer", ISSUER);
-        root.getInitParams().put("signatureAlgorithm", signatureAlgorithm);
-
-        server.start();
-        return server;
-	}
-
-	private void destroyCa(String keyAlgorithm, int keyBits,
-			String signatureAlgorithm) throws Exception {
-		ca.destroy();
-	}
-
 	public ScepCAClient initializeScepClient(CA ca, String keyAlgorithm, int keyBits, String signatureAlgorithm) throws Exception {
 		CAClient caClient = new BouncyCAClient(CLIENT_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
 		URL scepUrl = new URL(SCEP_URL);
@@ -131,8 +102,6 @@ public class ScepCAClientIntegrationTest {
 		new File(CA_KEYSTORE + ".passwords").delete();
 		scepClient = null;
 		server = null;
-		ca = null;
-		authorization = null;
 	}
 	
 	@Test

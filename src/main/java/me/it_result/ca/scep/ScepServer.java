@@ -16,8 +16,16 @@
  */
 package me.it_result.ca.scep;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+
 import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
+
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 
 /**
  * @author roman
@@ -25,27 +33,96 @@ import me.it_result.ca.CA;
  */
 public class ScepServer {
 
-	public static final String SERVER_ATTRIBUTE = "scepServer";
-	
 	private CA ca;
 	private Authorization authorization;
+	private int port;
+	private String hostname;
+	
+	private Server server;
+
+	/**
+	 * @param ca
+	 * @param authorization
+	 * @param port
+	 */
+	public ScepServer(CA ca, Authorization authorization, int port) {
+		this(ca, authorization, port, null);
+	}
 	
 	/**
 	 * @param ca
 	 * @param authorization
+	 * @param port
+	 * @param hostname
 	 */
-	public ScepServer(CA ca, Authorization authorization) {
+	public ScepServer(CA ca, Authorization authorization, int port,
+			String hostname) {
 		super();
 		this.ca = ca;
 		this.authorization = authorization;
+		this.port = port;
+		this.hostname = hostname;
 	}
 	
+	public void start() throws Exception {
+		if (isStarted())
+			throw new IllegalStateException("The server is started already");
+		// construct the server
+		if (hostname != null) {
+			InetAddress host = InetAddress.getByName(hostname);
+			InetSocketAddress address = new InetSocketAddress(host, port);
+			server = new Server(address);
+		}
+		else
+			server = new Server(port);
+		// initialize contexts
+		ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.addServlet(new ServletHolder(new ScepServlet()), "/pkiclient.exe");
+        // push scep server context
+        ScepServerContext ctx = new ScepServerContext(ca, authorization);
+        root.setAttribute(ScepServerContext.CONTEXT_ATTRIBUTE, ctx);
+        // start the server
+        server.start();
+	}
+	
+	public boolean isStarted() {
+		return server != null && server.isStarted();
+	}
+	
+	public void stop() throws Exception {
+		if (server != null)
+			server.stop();
+		server = null;
+	}
+
+	/**
+	 * @return the ca
+	 */
+	public CA getCa() {
+		return ca;
+	}
+
+	/**
+	 * @return the authorization
+	 */
 	public Authorization getAuthorization() {
 		return authorization;
 	}
-	
-	public CA getCA() {
-		return ca;
+
+	/**
+	 * @return the port
+	 */
+	public int getPort() {
+		return port;
+	}
+
+	/**
+	 * @return the hostname
+	 */
+	public String getHostname() {
+		return hostname;
 	}
 	
 }
