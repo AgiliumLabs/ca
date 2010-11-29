@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import me.it_result.ca.Authorization;
+import me.it_result.ca.AuthorizationOutcome;
 import me.it_result.ca.CA;
 
 import org.bouncycastle.asn1.pkcs.CertificationRequest;
@@ -62,26 +63,32 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	protected List<X509Certificate> doEnroll(
 			CertificationRequest certificationRequest)
 			throws OperationFailureException {
-		checkAuthorization(certificationRequest);
+		AuthorizationOutcome outcome = authorize(certificationRequest);
+		if (outcome == AuthorizationOutcome.REJECT) 
+			throw new OperationFailureException(FailInfo.badMessageCheck);
 		try {
 			byte[] csrBytes = certificationRequest.getEncoded();
-			X509Certificate certificate = ca().signCertificate(csrBytes);
-			return Collections.singletonList(certificate);
+			if (outcome == AuthorizationOutcome.ACCEPT) {
+				X509Certificate certificate = ca().signCertificate(csrBytes);
+				return Collections.singletonList(certificate);
+			} else {
+				// TODO: store csr for a manual review
+				return null;
+			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private void checkAuthorization(CertificationRequest certificationRequest) throws OperationFailureException {
+	private AuthorizationOutcome authorize(CertificationRequest certificationRequest) throws OperationFailureException {
 		Authorization authz = getAuthorization();
-		boolean authorized;
+		AuthorizationOutcome outcome;
 		try {
-			authorized = authz.isAuthorized(certificationRequest);
+			outcome = authz.isAuthorized(certificationRequest);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		if (!authorized) 
-			throw new OperationFailureException(FailInfo.badMessageCheck);
+		return outcome;
 	}
 
 	@Override

@@ -27,6 +27,7 @@ import java.security.cert.X509Certificate;
 import java.util.Properties;
 
 import me.it_result.ca.Authorization;
+import me.it_result.ca.AuthorizationOutcome;
 
 import org.bouncycastle.asn1.pkcs.CertificationRequest;
 import org.bouncycastle.asn1.pkcs.CertificationRequestInfo;
@@ -50,13 +51,16 @@ public class ChallengePasswordAuthorization implements Authorization {
 	 * @see me.it_result.ca.scep.Authorization#isAuthorized(org.bouncycastle.asn1.pkcs.CertificationRequest)
 	 */
 	@Override
-	public boolean isAuthorized(CertificationRequest certificationRequest) throws Exception {
+	public AuthorizationOutcome isAuthorized(CertificationRequest certificationRequest) throws Exception {
 		CertificationRequestInfo requestInfo = certificationRequest.getCertificationRequestInfo();
 		X509Name subject = requestInfo.getSubject();
 		String alias = Utils.generateAlias(subject);
 		String expectedPassword = readPassword(alias);
 		String actualPassword = Utils.extractChallengePassword(requestInfo.getAttributes()); 
-		return actualPassword != null && expectedPassword != null && actualPassword.equals(expectedPassword);
+		if (actualPassword != null && expectedPassword != null && actualPassword.equals(expectedPassword))
+			return AuthorizationOutcome.ACCEPT;
+		else
+			return AuthorizationOutcome.REJECT;
 	}
 	
 	@Override

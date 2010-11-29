@@ -16,17 +16,17 @@
  */
 package me.it_result.ca;
 
-import java.security.cert.X509Certificate;
-
-import org.bouncycastle.asn1.pkcs.CertificationRequest;
-
 /**
  * @author roman
  *
  */
-public interface Authorization {
+public enum AuthorizationOutcome {
 
-	public AuthorizationOutcome isAuthorized(CertificationRequest certificationRequest) throws Exception;
-	public void certificateEnrolled(X509Certificate certificate) throws Exception;
+	ACCEPT(), 
+	REJECT(),
+	/**
+	 * Enrollment request should be reviewed by administrator and processed manually
+	 */
+	MANUAL(); 
 	
 }
