@@ -33,8 +33,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
  */
 public class ScepServer {
 
-	private CA ca;
-	private Authorization authorization;
+	private ScepServerContext context;
 	private int port;
 	private String hostname;
 	
@@ -58,8 +57,7 @@ public class ScepServer {
 	public ScepServer(CA ca, Authorization authorization, int port,
 			String hostname) {
 		super();
-		this.ca = ca;
-		this.authorization = authorization;
+		this.context = new ScepServerContext(ca, authorization);
 		this.port = port;
 		this.hostname = hostname;
 	}
@@ -81,8 +79,7 @@ public class ScepServer {
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
         root.addServlet(new ServletHolder(new ScepServlet()), "/pkiclient.exe");
         // push scep server context
-        ScepServerContext ctx = new ScepServerContext(ca, authorization);
-        root.setAttribute(ScepServerContext.CONTEXT_ATTRIBUTE, ctx);
+        root.setAttribute(ScepServerContext.CONTEXT_ATTRIBUTE, context);
         // start the server
         server.start();
 	}
@@ -101,14 +98,14 @@ public class ScepServer {
 	 * @return the ca
 	 */
 	public CA getCa() {
-		return ca;
+		return context.getCA();
 	}
 
 	/**
 	 * @return the authorization
 	 */
 	public Authorization getAuthorization() {
-		return authorization;
+		return context.getAuthorization();
 	}
 
 	/**
