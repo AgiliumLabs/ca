@@ -17,23 +17,30 @@
 package me.it_result.ca.scep;
 
 import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertNotNull;
+import static org.testng.AssertJUnit.assertNull;
 import static org.testng.AssertJUnit.fail;
 
 import java.net.URL;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.Set;
 
+import me.it_result.ca.AuthorizationOutcome;
 import me.it_result.ca.CA;
 import me.it_result.ca.CAClient;
 import me.it_result.ca.CAException;
+import me.it_result.ca.ManualAuthorization;
 import me.it_result.ca.UserCertificateParameters;
 import me.it_result.ca.bouncycastle.BouncyCA;
 import me.it_result.ca.bouncycastle.BouncyCAClient;
 import me.it_result.ca.bouncycastle.ChallengePasswordAuthorization;
 import me.it_result.ca.bouncycastle.ProfileRegistry;
+import me.it_result.ca.bouncycastle.Utils;
 import me.it_result.ca.db.Database;
 import me.it_result.ca.db.FileDatabase;
 
+import org.bouncycastle.asn1.pkcs.CertificationRequest;
 import org.bouncycastle.jce.X509Principal;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -68,15 +75,11 @@ public class ScepCAClientIntegrationTest {
 		CA ca = new BouncyCA(getCaDatabase(), keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
 		ca.destroy();
 		ca.initialize();
-		ChallengePasswordAuthorization authorization = new ChallengePasswordAuthorization(getPasswordDatabase());
+		ChallengePasswordAuthorization authorization = new ChallengePasswordAuthorization(getCaDatabase());
 		authorization.storePassword(SUBJECT_DN, SCEP_PASSWORD);
-		server = new ScepServer(ca, authorization, SCEP_PORT);
+		server = new ScepServer(new ScepServerContext(ca, authorization, getCaDatabase()), SCEP_PORT);
 		server.start();
 		scepClient = initializeScepClient(ca, keyAlgorithm, keyBits, signatureAlgorithm);
-	}
-	
-	private Database getPasswordDatabase() {
-		return new FileDatabase(CA_DB_LOCATION + ".passwords");
 	}
 
 	private Database getCaDatabase() {
@@ -88,7 +91,7 @@ public class ScepCAClientIntegrationTest {
 	}
 
 	private CA getCa() {
-		return server.getCa();
+		return server.getContext().getCA();
 	}
 	
 	public ScepCAClient initializeScepClient(CA ca, String keyAlgorithm, int keyBits, String signatureAlgorithm) throws Exception {
@@ -110,7 +113,6 @@ public class ScepCAClientIntegrationTest {
 				getCa().destroy();
 			scepClient.getCaClient().destroy();
 		} catch (Exception e) {}
-		getPasswordDatabase().destroy();
 		scepClient = null;
 		server = null;
 	}
@@ -122,7 +124,7 @@ public class ScepCAClientIntegrationTest {
 		params.setChallengePassword(SCEP_PASSWORD);
 		params.setSubjectDN(SUBJECT_DN);
 		scepClient.enrollCertificate(params);
-		// The certificate should be enrolled by the server
+		// Then the certificate should be enrolled by the server
 		CA ca = getCa();
 		Set<X509Certificate> certificates = ca.listCertificates();
 		assertEquals(1, certificates.size());
@@ -137,7 +139,52 @@ public class ScepCAClientIntegrationTest {
 		UserCertificateParameters params = new UserCertificateParameters();
 		params.setChallengePassword("invalid");
 		params.setSubjectDN(SUBJECT_DN);
-		// The server must return a failure instead of enrolling the certificate
+		// Then the server must return a failure instead of enrolling the certificate
+		try {
+			scepClient.enrollCertificate(params);
+			fail("ScepFailureException expected");
+		} catch (ScepFailureException e) {}
+	}
+	
+	@Test
+	public void testManualEnrollment() throws CAException {
+		// When server is configured for manual enrollment
+		server.getContext().setAuthorization(new ManualAuthorization());
+		// And enrollCertificate is invoked a few times
+		UserCertificateParameters params = new UserCertificateParameters();
+		params.setSubjectDN(SUBJECT_DN);
+		scepClient.enrollCertificate(params);
+		X509Certificate cert = scepClient.enrollCertificate(params);
+		// Then no certificate should be returned due to manual enrollment is required
+		assertNull(cert);
+		// And CSR should be scheduled for manual enrollment
+		Collection<CertificationRequest> csrs = server.getManuallyAuthorizedCsrs();
+		assertEquals(1, csrs.size());
+		CertificationRequest csr = csrs.iterator().next();
+		assertEquals(Utils.generateAlias(SUBJECT_DN), Utils.generateAlias(csr.getCertificationRequestInfo().getSubject()));
+		// When the CSR is approved manually
+		server.authorizeManually(csr, AuthorizationOutcome.ACCEPT);
+		// And enrollCertificate is invoked again
+		cert = scepClient.enrollCertificate(params);
+		// Then the signed certificate should be returned by the server
+		assertNotNull(cert);
+	}
+	
+	@Test
+	public void testManualReject() throws CAException {
+		// When server is configured for manual enrollment
+		server.getContext().setAuthorization(new ManualAuthorization());
+		// And enrollCertificate is invoked
+		UserCertificateParameters params = new UserCertificateParameters();
+		params.setSubjectDN(SUBJECT_DN);
+		scepClient.enrollCertificate(params);
+		scepClient.enrollCertificate(params);
+		// When the CSR is approved manually
+		Collection<CertificationRequest> csrs = server.getManuallyAuthorizedCsrs();
+		CertificationRequest csr = csrs.iterator().next();
+		server.authorizeManually(csr, AuthorizationOutcome.REJECT);
+		// And enrollCertificate is invoked again
+		// Then the server must return a failure instead of enrolling the certificate
 		try {
 			scepClient.enrollCertificate(params);
 			fail("ScepFailureException expected");

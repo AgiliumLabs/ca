@@ -18,10 +18,18 @@ package me.it_result.ca.scep;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
-import me.it_result.ca.Authorization;
-import me.it_result.ca.CA;
+import me.it_result.ca.AuthorizationOutcome;
+import me.it_result.ca.CAException;
+import me.it_result.ca.bouncycastle.Utils;
+import me.it_result.ca.db.Database;
 
+import org.bouncycastle.asn1.pkcs.CertificationRequest;
+import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -40,24 +48,22 @@ public class ScepServer {
 	private Server server;
 
 	/**
-	 * @param ca
-	 * @param authorization
+	 * @param serverContext
 	 * @param port
 	 */
-	public ScepServer(CA ca, Authorization authorization, int port) {
-		this(ca, authorization, port, null);
+	public ScepServer(ScepServerContext context, int port) {
+		this(context, port, null);
 	}
 	
 	/**
-	 * @param ca
-	 * @param authorization
+	 * @param serverContext
 	 * @param port
 	 * @param hostname
 	 */
-	public ScepServer(CA ca, Authorization authorization, int port,
+	public ScepServer(ScepServerContext context, int port,
 			String hostname) {
 		super();
-		this.context = new ScepServerContext(ca, authorization);
+		this.context = context;
 		this.port = port;
 		this.hostname = hostname;
 	}
@@ -95,20 +101,6 @@ public class ScepServer {
 	}
 
 	/**
-	 * @return the ca
-	 */
-	public CA getCa() {
-		return context.getCA();
-	}
-
-	/**
-	 * @return the authorization
-	 */
-	public Authorization getAuthorization() {
-		return context.getAuthorization();
-	}
-
-	/**
 	 * @return the port
 	 */
 	public int getPort() {
@@ -122,4 +114,40 @@ public class ScepServer {
 		return hostname;
 	}
 	
+	public ScepServerContext getContext() {
+		return context;
+	}
+
+	public Collection<CertificationRequest> getManuallyAuthorizedCsrs() throws CAException {
+		try {
+			Database db = getContext().getDatabase();
+			Set<String> aliases = db.listAliases(ScepServlet.MANUAL_AUTHORIZATION_CSR_PROPERTY);
+			List<CertificationRequest> csrs = new ArrayList<CertificationRequest>();
+			for (String alias : aliases) {
+				byte[] csrBytes = db.readBytes(alias, ScepServlet.MANUAL_AUTHORIZATION_CSR_PROPERTY);
+				CertificationRequest csr = new PKCS10CertificationRequest(csrBytes);
+				csrs.add(csr);
+			}
+			return csrs;
+		} catch (Exception e) {
+			throw new CAException(e);
+		}
+	}
+	
+	public void authorizeManually(CertificationRequest csr, AuthorizationOutcome authorization) throws CAException {
+		try {
+			byte[] csrBytes = csr.getEncoded();
+			String alias = Utils.sha1(csrBytes);
+			Database db = getContext().getDatabase();
+			Set<String> aliases = db.listAliases(ScepServlet.MANUAL_AUTHORIZATION_CSR_PROPERTY);
+			if (!aliases.contains(alias)) 
+				throw new CAException("The csr is not scheduled for manual authorization");
+			if (authorization == AuthorizationOutcome.ACCEPT) 
+				getContext().getCA().signCertificate(csrBytes);
+			db.removeProperty(alias, ScepServlet.MANUAL_AUTHORIZATION_CSR_PROPERTY);
+		} catch (Exception e) {
+			throw new CAException(e);
+		}
+	}
+
 }

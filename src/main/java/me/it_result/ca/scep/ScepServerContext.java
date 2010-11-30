@@ -18,6 +18,7 @@ package me.it_result.ca.scep;
 
 import me.it_result.ca.Authorization;
 import me.it_result.ca.CA;
+import me.it_result.ca.db.Database;
 
 /**
  * @author roman
@@ -29,23 +30,33 @@ public class ScepServerContext {
 	
 	private CA ca;
 	private Authorization authorization;
+	private Database database;
 	
 	/**
 	 * @param ca
 	 * @param authorization
 	 */
-	public ScepServerContext(CA ca, Authorization authorization) {
+	public ScepServerContext(CA ca, Authorization authorization, Database database) {
 		super();
 		this.ca = ca;
 		this.authorization = authorization;
+		this.database = database;
 	}
 	
+	public Database getDatabase() {
+		return database;
+	}
+
 	public Authorization getAuthorization() {
 		return authorization;
 	}
 	
 	public CA getCA() {
 		return ca;
+	}
+	
+	void setAuthorization(Authorization authorization) {
+		this.authorization = authorization;
 	}
 	
 }

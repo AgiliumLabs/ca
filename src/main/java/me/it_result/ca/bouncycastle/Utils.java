@@ -16,6 +16,8 @@
  */
 package me.it_result.ca.bouncycastle;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Enumeration;
 
 import javax.security.auth.x500.X500Principal;
@@ -30,6 +32,7 @@ import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.pkcs.Attribute;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x509.X509Name;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  * @author roman
@@ -101,6 +104,13 @@ public class Utils {
 			}
 		} catch (Exception e) {}
 		return challengePassword;
+	}
+
+	public static String sha1(byte[] data) throws NoSuchAlgorithmException {
+		MessageDigest digest = MessageDigest.getInstance("SHA1");
+		byte[] sha1 = digest.digest(data);
+		byte[] encodedSha1 = Hex.encode(sha1);
+		return new String(encodedSha1);
 	}
 	
 }

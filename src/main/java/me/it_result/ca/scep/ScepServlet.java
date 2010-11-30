@@ -28,6 +28,8 @@ import java.util.Set;
 import me.it_result.ca.Authorization;
 import me.it_result.ca.AuthorizationOutcome;
 import me.it_result.ca.CA;
+import me.it_result.ca.bouncycastle.Utils;
+import me.it_result.ca.db.Database;
 
 import org.bouncycastle.asn1.pkcs.CertificationRequest;
 import org.bouncycastle.asn1.x509.X509Name;
@@ -47,6 +49,8 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	 */
 	private static final long serialVersionUID = -1904719024430363584L;
 	
+	static final String MANUAL_AUTHORIZATION_CSR_PROPERTY = ScepServlet.class.getName() + ".csr";
+	
 	@Override
 	protected Set<Capability> doCapabilities(String identifier) {
 		Set<Capability> capabilities = new HashSet<Capability>();
@@ -63,6 +67,19 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	protected List<X509Certificate> doEnroll(
 			CertificationRequest certificationRequest)
 			throws OperationFailureException {
+		// Is csr signed already?
+		try {
+			for (X509Certificate cert : ca().listCertificates()) {
+				String certAlias = Utils.generateAlias(cert.getSubjectX500Principal());
+				String csrAlias = Utils.generateAlias(certificationRequest.getCertificationRequestInfo().getSubject());
+				// TODO: compare keys, etc?
+				if (certAlias.equals(csrAlias))
+					return Collections.singletonList(cert);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		// execute request
 		AuthorizationOutcome outcome = authorize(certificationRequest);
 		if (outcome == AuthorizationOutcome.REJECT) 
 			throw new OperationFailureException(FailInfo.badMessageCheck);
@@ -72,8 +89,9 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 				X509Certificate certificate = ca().signCertificate(csrBytes);
 				return Collections.singletonList(certificate);
 			} else {
-				// TODO: store csr for a manual review
-				return null;
+				String alias = Utils.sha1(csrBytes);
+				getDatabase().writeBytes(alias, MANUAL_AUTHORIZATION_CSR_PROPERTY, csrBytes);
+				return Collections.emptyList();
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -171,6 +189,11 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	protected Authorization getAuthorization() {
 		ScepServerContext ctx = getScepServerContext();
 		return ctx.getAuthorization();
+	}
+
+	protected Database getDatabase() {
+		ScepServerContext ctx = getScepServerContext();
+		return ctx.getDatabase();
 	}
 
 }
