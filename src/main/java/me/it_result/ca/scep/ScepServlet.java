@@ -50,6 +50,7 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 	private static final long serialVersionUID = -1904719024430363584L;
 	
 	static final String MANUAL_AUTHORIZATION_CSR_PROPERTY = ScepServlet.class.getName() + ".csr";
+	static final String REJECTED_CSR_PROPERTY = ScepServlet.class.getName() + ".csr.rejected";
 	
 	@Override
 	protected Set<Capability> doCapabilities(String identifier) {
@@ -79,6 +80,19 @@ public class ScepServlet extends org.jscep.server.ScepServlet {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+		// Was csr manually rejected?
+		boolean rejected;
+		try {
+			Database db = getDatabase();
+			byte[] csrBytes = certificationRequest.getEncoded();
+			String alias = Utils.sha1(csrBytes);
+			rejected = db.readBytes(alias, REJECTED_CSR_PROPERTY) != null;
+			db.removeProperty(alias, REJECTED_CSR_PROPERTY);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		if (rejected)
+			throw new OperationFailureException(FailInfo.badMessageCheck);
 		// execute request
 		AuthorizationOutcome outcome = authorize(certificationRequest);
 		if (outcome == AuthorizationOutcome.REJECT) 

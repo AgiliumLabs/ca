@@ -139,11 +139,12 @@ public class ScepServer {
 			byte[] csrBytes = csr.getEncoded();
 			String alias = Utils.sha1(csrBytes);
 			Database db = getContext().getDatabase();
-			Set<String> aliases = db.listAliases(ScepServlet.MANUAL_AUTHORIZATION_CSR_PROPERTY);
-			if (!aliases.contains(alias)) 
+			if (db.readBytes(alias, ScepServlet.MANUAL_AUTHORIZATION_CSR_PROPERTY) == null) 
 				throw new CAException("The csr is not scheduled for manual authorization");
 			if (authorization == AuthorizationOutcome.ACCEPT) 
 				getContext().getCA().signCertificate(csrBytes);
+			else if (authorization == AuthorizationOutcome.REJECT)
+				db.writeBytes(alias, ScepServlet.REJECTED_CSR_PROPERTY, csrBytes);
 			db.removeProperty(alias, ScepServlet.MANUAL_AUTHORIZATION_CSR_PROPERTY);
 		} catch (Exception e) {
 			throw new CAException(e);
