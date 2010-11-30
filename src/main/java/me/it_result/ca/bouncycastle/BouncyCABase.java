@@ -54,7 +54,7 @@ import org.bouncycastle.x509.extension.SubjectKeyIdentifierStructure;
  */
 public abstract class BouncyCABase {
 
-	static final String CA_ALIAS = "CA";
+	static final String CA_ALIAS = BouncyCABase.class.getName() + ".ca";;
 	static final String KEYSTORE_PROPERTY = BouncyCABase.class.getName() + ".keystore";
 	
 	protected Database database;

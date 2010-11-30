@@ -21,7 +21,9 @@ import static org.testng.AssertJUnit.assertNull;
 import static org.testng.AssertJUnit.assertTrue;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -110,6 +112,16 @@ public abstract class DatabaseTest {
 		database.writeString("alias", "property", "data");
 		database.destroy();
 		assertDatabaseDestroyed();
+	}
+	
+	@Test
+	public void testListAliases() throws Exception {
+		database.writeString("alias1", "property", "data");
+		database.writeString("alias2", "property", "data");
+		database.writeString("alias3", "property-next", "data");
+		Set<String> actualAliases = database.listAliases("property");
+		Set<String> expectedAliases = new HashSet<String>(Arrays.asList(new String[] {"alias1", "alias2"}));
+		assertEquals(expectedAliases, actualAliases);
 	}
 
 	protected abstract void assertDatabaseDestroyed() throws Exception;

@@ -24,12 +24,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import org.bouncycastle.util.encoders.Base64;
-import org.bouncycastle.util.encoders.Hex;
 
 /**
  * @author roman
@@ -38,18 +38,10 @@ import org.bouncycastle.util.encoders.Hex;
 public class FileDatabase implements Database {
 
 	private String databaseLocation;
-	private boolean useSingleFile;
 	
-	private MessageDigest digest;
-	
-	public FileDatabase(String databaseLocation, boolean useSingleFile) {
+	public FileDatabase(String databaseLocation) {
 		super();
 		this.databaseLocation = databaseLocation;
-		this.useSingleFile = useSingleFile;
-	}
-
-	public FileDatabase(String databaseLocation) {
-		this(databaseLocation, true);
 	}
 
 	/* (non-Javadoc)
@@ -71,24 +63,24 @@ public class FileDatabase implements Database {
 	@Override
 	public byte[] readBytes(String alias, String property)
 			throws Exception {
-		String value = executeDataCommand(new ReadCommand(), alias, property);
+		String value = executeDataCommand(new ReadCommand(alias, property));
 		byte[] data = value != null ? Base64.decode(value) : null;
 		return data;
 	}
 	
-	private <T> T executeDataCommand(DataCommand<T> command, String alias, String property) throws IOException, NoSuchAlgorithmException {
-		File dataFile = calculateFileName(alias, property);
+	private <T> T executeDataCommand(DataCommand<T> command) throws IOException, NoSuchAlgorithmException {
+		File dataFile = getDataFile();
 		FileLock lock = null;
 		try {
 			lock = lockFile(dataFile);
-			T value = executeDataCommand(command, dataFile, alias, property);
+			T value = executeDataCommand(command, dataFile);
 			return value;
 		} finally {
 			unlockFile(lock);
 		}
 	}
 
-	private <T> T executeDataCommand(DataCommand<T> command, File dataFile, String alias, String property) throws IOException {
+	private <T> T executeDataCommand(DataCommand<T> command, File dataFile) throws IOException {
 		InputStream is = new FileInputStream(dataFile);
 		Properties data = new Properties();
 		try {
@@ -96,12 +88,12 @@ public class FileDatabase implements Database {
 		} finally {
 			try { is.close(); } catch (Exception e) {}
 		}
-		command.execute(alias, property, data, dataFile);
-		return command.getResult();
+		return command.execute(data, dataFile);
 	}
 
 	private void unlockFile(FileLock lock) {
-		try { lock.channel().force(true); } catch (Exception e) {}
+		// data is not being written via this channel
+		// try { lock.channel().force(true); } catch (Exception e) {}
 		try { lock.release(); } catch (Exception e) {}
 		try { lock.channel().close(); } catch (Exception e) {}
 	}
@@ -116,17 +108,8 @@ public class FileDatabase implements Database {
 		return fc.lock();
 	}
 
-	private File calculateFileName(String alias, String property) throws NoSuchAlgorithmException {
-		if (useSingleFile)
-			return new File(databaseLocation);
-		else {
-			if (digest == null)
-				digest = MessageDigest.getInstance("MD5");
-			digest.update(alias.getBytes());
-			byte[] md5 = digest.digest(property.getBytes());
-			String fileName = new String(Hex.encode(md5));
-			return new File(databaseLocation, fileName);
-		}
+	private File getDataFile() throws NoSuchAlgorithmException {
+		return new File(databaseLocation);
 	}
 
 	/* (non-Javadoc)
@@ -134,7 +117,7 @@ public class FileDatabase implements Database {
 	 */
 	@Override
 	public String readString(String alias, String property) throws Exception {
-		String value = executeDataCommand(new ReadCommand(), alias, property);
+		String value = executeDataCommand(new ReadCommand(alias, property));
 		return value;
 	}
 
@@ -143,7 +126,7 @@ public class FileDatabase implements Database {
 	 */
 	@Override
 	public void removeProperty(String alias, String property) throws Exception {
-		executeDataCommand(new RemoveCommand(), alias, property);
+		executeDataCommand(new RemoveCommand(alias, property));
 	}
 
 	/* (non-Javadoc)
@@ -153,7 +136,7 @@ public class FileDatabase implements Database {
 	public void writeBytes(String alias, String property, byte[] data)
 			throws Exception {
 		byte[] encoded = Base64.encode(data);
-		executeDataCommand(new WriteCommand(new String(encoded)), alias, property);
+		executeDataCommand(new WriteCommand(new String(encoded), alias, property));
 	}
 
 	/* (non-Javadoc)
@@ -162,44 +145,62 @@ public class FileDatabase implements Database {
 	@Override
 	public void writeString(String alias, String property, String data)
 			throws Exception {
-		executeDataCommand(new WriteCommand(data), alias, property);
+		executeDataCommand(new WriteCommand(data, alias, property));
 	}
 	
+	@Override
+	public Set<String> listAliases(String property) throws Exception {
+		Set<String> aliases = executeDataCommand(new ListAliasesCommand(property));
+		return aliases;
+	}
+
 	private interface DataCommand<T> {
 		
-		public void execute(String alias, String property, Properties data, File dataFile) throws IOException;
-		public T getResult();
+		public T execute(Properties data, File dataFile) throws IOException;
 		
 	}
 	
 	private class ReadCommand implements DataCommand<String> {
 
-		private String result;
+		private String alias;
+		private String property;
 		
+		public ReadCommand(String alias, String property) {
+			super();
+			this.alias = alias;
+			this.property = property;
+		}
+
 		@Override
-		public void execute(String alias, String property, Properties data, File dataFile) {
+		public String execute(Properties data, File dataFile) {
+			String result = null;
 			int maxRecordIndex = Integer.parseInt(data.getProperty("record.max.index", "1"));
 			for (int i = 1; i <= maxRecordIndex; i++) {
 				String recordAlias = data.getProperty(i + ".alias");
 				String recordProperty = data.getProperty(i + ".property");
-				if (recordAlias != null && recordAlias.equals(alias) && recordProperty.equals(property)) { 
+				if (recordAlias != null && recordAlias.equals(alias) && recordProperty.equals(property)) {  
 					result = data.getProperty(i + ".value");
 					break;
 				}
 			}
-		}
-
-		@Override
-		public String getResult() {
 			return result;
 		}
-		
+
 	}
 	
 	private class RemoveCommand implements DataCommand<Object> {
 
+		private String alias;
+		private String property;
+		
+		public RemoveCommand(String alias, String property) {
+			super();
+			this.alias = alias;
+			this.property = property;
+		}
+
 		@Override
-		public void execute(String alias, String property, Properties data,
+		public Object execute(Properties data,
 				File dataFile) throws IOException {
 			int maxRecordIndex = Integer.parseInt(data.getProperty("record.max.index", "1"));
 			for (int i = 1; i <= maxRecordIndex; i++) {
@@ -218,10 +219,6 @@ public class FileDatabase implements Database {
 			} finally {
 				try { os.close(); } catch (Exception e) {}
 			}
-		}
-
-		@Override
-		public Object getResult() {
 			return null;
 		}
 		
@@ -230,15 +227,18 @@ public class FileDatabase implements Database {
 	private class WriteCommand implements DataCommand<Object> {
 
 		private String value;
+		private String alias;
+		private String property;
 		
-		public WriteCommand(String value) {
+		public WriteCommand(String value, String alias, String property) {
 			super();
 			this.value = value;
+			this.alias = alias;
+			this.property = property;
 		}
-
+		
 		@Override
-		public void execute(String alias, String property, Properties data,
-				File dataFile) throws IOException {
+		public Object execute(Properties data, File dataFile) throws IOException {
 			int maxRecordIndex = Integer.parseInt(data.getProperty("record.max.index", "0"));
 			boolean updated = false;
 			for (int i = 1; i <= maxRecordIndex; i++) {
@@ -264,13 +264,33 @@ public class FileDatabase implements Database {
 			} finally {
 				try { os.close(); } catch (Exception e) {}
 			}
+			return null;
+		}
+
+	}
+	
+	private class ListAliasesCommand implements DataCommand<Set<String>> {
+
+		private String property;
+		
+		public ListAliasesCommand(String property) {
+			super();
+			this.property = property;
 		}
 
 		@Override
-		public Object getResult() {
-			return null;
+		public Set<String> execute(Properties data, File dataFile) throws IOException {
+			Set<String> result = new HashSet<String>();
+			int maxRecordIndex = Integer.parseInt(data.getProperty("record.max.index", "0"));
+			for (int i = 1; i <= maxRecordIndex; i++) {
+				String recordAlias = data.getProperty(i + ".alias");
+				String recordProperty = data.getProperty(i + ".property");
+				if (recordProperty != null && recordProperty.equals(property))
+					result.add(recordAlias);
+			}
+			return result;
 		}
-		
+
 	}
 
 }

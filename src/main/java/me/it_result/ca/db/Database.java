@@ -16,6 +16,8 @@
  */
 package me.it_result.ca.db;
 
+import java.util.Set;
+
 /**
  * @author roman
  *
@@ -28,5 +30,6 @@ public interface Database {
 	public void removeProperty(String alias, String property) throws Exception;
 	public byte[] readBytes(String alias, String property) throws Exception;
 	public String readString(String alias, String property) throws Exception;
+	public Set<String> listAliases(String property) throws Exception;
 	
 }

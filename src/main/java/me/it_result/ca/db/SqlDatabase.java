@@ -26,6 +26,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author roman
@@ -181,6 +183,22 @@ public class SqlDatabase implements Database {
 				Clob clob = rs.getClob(1);
 				result = clob.getSubString(1, (int) clob.length());
 			}
+			return result;
+		} finally {
+			connection.close();
+		}
+	}
+
+	@Override
+	public Set<String> listAliases(String property) throws Exception {
+		Connection connection = getConnection();
+		try {
+			PreparedStatement stmt = connection.prepareStatement("select alias from property where property = ?");
+			stmt.setString(1, property);
+			ResultSet rs = stmt.executeQuery();
+			Set<String> result = new HashSet<String>();
+			while (rs.next()) 
+				result.add(rs.getString("alias"));
 			return result;
 		} finally {
 			connection.close();
