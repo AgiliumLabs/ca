@@ -20,7 +20,6 @@ import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertNull;
 
-import java.io.File;
 import java.math.BigInteger;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -32,6 +31,8 @@ import me.it_result.ca.CAClient;
 import me.it_result.ca.CAClientTest;
 import me.it_result.ca.CAException;
 import me.it_result.ca.X509Assertions;
+import me.it_result.ca.db.Database;
+import me.it_result.ca.db.FileDatabase;
 
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -48,8 +49,8 @@ import org.testng.annotations.Test;
  */
 public class BouncyCAClientTest extends CAClientTest {
 
-	private static final String CA_KEYSTORE = "target/ca.keystore";
-	private static final String KEYSTORE = "target/client.keystore";
+	private static final String CA_DATABASE_LOCATION = "target/ca.keystore";
+	private static final String CLIENT_DATABASE_LOCATION = "target/client.keystore";
 	private static final String KEYSTORE_PASSWORD = "changeme";
 	private static final int VALIDITY_DAYS = 365;
 
@@ -63,18 +64,29 @@ public class BouncyCAClientTest extends CAClientTest {
 	public void setUp(@Optional("RSA") String keyAlgorithm, @Optional("1024") int keyBits, @Optional("MD5WithRSA") String signatureAlgorithm, @Optional("MD5withRSA") String jdkSignatureAlgorithm) throws AlreadyInitializedException, CAException {
 		this.jdkSignatureAlgorithm = jdkSignatureAlgorithm;
 		ProfileRegistry profiles = ProfileRegistry.getDefaultInstance();
-		ca = new BouncyCA(CA_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", jdkSignatureAlgorithm, profiles);
-		client = new BouncyCAClient(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, profiles);
+		ca = new BouncyCA(getCADatabase(), keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, "CN=CA", jdkSignatureAlgorithm, profiles);
+		client = new BouncyCAClient(getClientDatabase(), keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, profiles);
 		client.destroy();
 		ca.destroy();
 		ca.initialize();
 	}
 	
+	private Database getClientDatabase() {
+		return new FileDatabase(CLIENT_DATABASE_LOCATION);
+	}
+
+	private Database getCADatabase() {
+		return new FileDatabase(CA_DATABASE_LOCATION);
+	}
+
 	@AfterMethod
-	public void tearDown() {
-		ca.destroy();
-		client.destroy();
-		new File(KEYSTORE).delete();
+	public void tearDown() throws CAException {
+		if (ca != null)
+			ca.destroy();
+		if (client != null)
+			client.destroy();
+		ca = null;
+		client = null;
 	}
 
 	@Override

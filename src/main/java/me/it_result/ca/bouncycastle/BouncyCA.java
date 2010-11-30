@@ -16,13 +16,6 @@
  */
 package me.it_result.ca.bouncycastle;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -32,13 +25,13 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 
 import me.it_result.ca.AlreadyInitializedException;
 import me.it_result.ca.CA;
 import me.it_result.ca.CAException;
 import me.it_result.ca.NotInitializedException;
+import me.it_result.ca.db.Database;
 
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.x509.X509Name;
@@ -50,25 +43,18 @@ import org.bouncycastle.jce.PKCS10CertificationRequest;
  */
 public class BouncyCA extends BouncyCABase implements CA {
 
+	static final String SERIAL_NUMBER_PROPERTY = BouncyCA.class.getName() + ".serialNumber";
+	
 	private String issuer;
 	private int validityDays;
 
-	public BouncyCA(String keystore, String keyAlgorithm, int keyBits,
+	public BouncyCA(Database database, String keyAlgorithm, int keyBits,
 			int validityDays, String keystorePassword, String issuer, 
 			String signatureAlgorithm, ProfileRegistry profiles) {
-		super(keystore, keyAlgorithm, keyBits, keystorePassword,
+		super(database, keyAlgorithm, keyBits, keystorePassword,
 				signatureAlgorithm, profiles);
 		this.validityDays = validityDays;
 		this.issuer = issuer;
-	}
-
-	/* (non-Javadoc)
-	 * @see me.it_result.ca.CA#destroy()
-	 */
-	@Override
-	public synchronized void destroy() {
-		new File(keystore).delete();
-		new File(keystore + ".properties").delete();
 	}
 
 	/* (non-Javadoc)
@@ -105,16 +91,11 @@ public class BouncyCA extends BouncyCABase implements CA {
 	 */
 	@Override
 	public synchronized boolean isInitialized() {
-		InputStream is = null;
 		try {
-			is = new FileInputStream(keystore);
-			KeyStore keyStore = KeyStore.getInstance("JKS");
-			keyStore.load(is, keystorePassword.toCharArray());
+			KeyStore keyStore = loadKeystore();
 			return keyStore.containsAlias(CA_ALIAS) && keyStore.isKeyEntry(CA_ALIAS);
 		} catch (Exception e) {
 			return false;
-		} finally {
-			try { is.close(); } catch (Exception e) {}
 		}
 	}
 
@@ -201,40 +182,15 @@ public class BouncyCA extends BouncyCABase implements CA {
 		}
 	}
 	
-	private synchronized BigInteger nextSerialNumber() throws FileNotFoundException {
-		Properties caProperties = readCaProperties();
-		BigInteger nextSerialNumber = BigInteger.ONE;
-		try {
-			nextSerialNumber = new BigInteger(caProperties.getProperty("serial"));
-		} catch (Exception e) {}
+	private synchronized BigInteger nextSerialNumber() throws Exception {
+		String serialNumberStr = database.readString(CA_ALIAS, SERIAL_NUMBER_PROPERTY);
+		BigInteger nextSerialNumber = serialNumberStr == null ? BigInteger.ONE : new BigInteger(serialNumberStr);
 		return nextSerialNumber;
 	}
 
-	private Properties readCaProperties() throws FileNotFoundException {
-		Properties caProperties = new Properties();
-		InputStream is = null;
-		try {
-			is = new FileInputStream(keystore + ".properties");
-			caProperties.load(is);
-		} catch (Exception e) {}
-		finally {
-			if (is != null)
-				try { is.close(); } catch (Exception e) {}
-		}
-		return caProperties;
-	}
-
-	private void incrementSerialNumber(BigInteger serialNumber) throws IOException {
+	private void incrementSerialNumber(BigInteger serialNumber) throws Exception {
 		BigInteger nextSerialNumber = serialNumber.add(BigInteger.ONE);
-		Properties caProperties = readCaProperties();
-		caProperties.setProperty("serial", nextSerialNumber.toString());
-		OutputStream os = new FileOutputStream(keystore + ".properties");
-		try {
-			caProperties.store(os, "");
-			os.flush();
-		} finally {
-			try { os.close(); } catch (Exception e) {}
-		}
+		database.writeString(CA_ALIAS, SERIAL_NUMBER_PROPERTY, nextSerialNumber.toString());
 	}
 
 	@Override

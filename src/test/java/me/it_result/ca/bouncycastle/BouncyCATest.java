@@ -19,14 +19,16 @@ package me.it_result.ca.bouncycastle;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
-import java.io.File;
 import java.math.BigInteger;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
 import me.it_result.ca.CA;
+import me.it_result.ca.CAException;
 import me.it_result.ca.CATest;
 import me.it_result.ca.X509Assertions;
+import me.it_result.ca.db.Database;
+import me.it_result.ca.db.FileDatabase;
 
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.jce.X509KeyUsage;
@@ -44,8 +46,7 @@ import org.testng.annotations.Test;
  */
 public class BouncyCATest extends CATest {
 
-	private static final String KEYSTORE = "target/ca.keystore";
-	private static final String KEYSTORE_PROPS = "target/ca.keystore.properties";
+	private static final String DATABASE_LOCATION = "target/ca.keystore";
 	private static final int VALIDITY_DAYS = 365;
 	private static final String KEYSTORE_PASSWORD = "changeme";
 	private static final String ISSUER = "CN=CA,O=it-result.me,C=RU";
@@ -56,18 +57,22 @@ public class BouncyCATest extends CATest {
 
 	@BeforeMethod
 	@Parameters({"keyAlgorithm", "keyBits", "bouncyCastleProviderSignatureAlgorithm", "jdkSignatureAlgorithm"})
-	public void setUp(@Optional(value="RSA") String keyAlgorithm, @Optional(value="1024") int keyBits, @Optional("SHA512WithRSA") String bouncyCastleProviderSignatureAlgorithm, @Optional("SHA512withRSA") String jdkSignatureAlgorithm) {
+	public void setUp(@Optional(value="RSA") String keyAlgorithm, @Optional(value="1024") int keyBits, @Optional("SHA512WithRSA") String bouncyCastleProviderSignatureAlgorithm, @Optional("SHA512withRSA") String jdkSignatureAlgorithm) throws CAException {
+		tearDown();
 		this.jdkSignatureAlgorithm = jdkSignatureAlgorithm;
-		new File(KEYSTORE).delete();
-		new File(KEYSTORE_PROPS).delete();
-		ca = new BouncyCA(KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, bouncyCastleProviderSignatureAlgorithm, ProfileRegistry.getDefaultInstance());
+		ca = new BouncyCA(getDatabase(), keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, bouncyCastleProviderSignatureAlgorithm, ProfileRegistry.getDefaultInstance());
 	}
 	
 	@AfterMethod
-	public void tearDown() {
-		new File(KEYSTORE).delete();
-		new File(KEYSTORE_PROPS).delete();
-		ca.destroy();
+	public void tearDown() throws CAException {
+		if (ca != null) {
+			ca.destroy();
+			ca = null;
+		}
+	}
+
+	private Database getDatabase() {
+		return new FileDatabase(DATABASE_LOCATION);
 	}
 
 	@Override

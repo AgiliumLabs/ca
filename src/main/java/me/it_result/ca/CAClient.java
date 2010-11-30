@@ -33,8 +33,10 @@ public interface CAClient {
 	
 	/**
 	 * Cleans up the certificate stores
+	 * 
+	 * @throws CAException
 	 */
-	public void destroy();
+	public void destroy() throws CAException;
 	
 	/**
 	 * Client is considered initialized in case CA certificate was assigned the

@@ -16,9 +16,6 @@
  */
 package me.it_result.ca.bouncycastle;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -29,11 +26,12 @@ import java.security.cert.X509Certificate;
 import me.it_result.ca.AlreadyInitializedException;
 import me.it_result.ca.CAClient;
 import me.it_result.ca.CAException;
-import me.it_result.ca.NotInitializedException;
 import me.it_result.ca.CertificateParameters;
 import me.it_result.ca.DuplicateSubjectException;
 import me.it_result.ca.InvalidCAException;
 import me.it_result.ca.InvalidCertificateKeyException;
+import me.it_result.ca.NotInitializedException;
+import me.it_result.ca.db.Database;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 
@@ -45,18 +43,11 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 
 	private int selfSignedCertificateValidityDays;
 	
-	public BouncyCAClient(String keystore, String keyAlgorithm, int keyBits, 
+	public BouncyCAClient(Database database, String keyAlgorithm, int keyBits, 
 			int selfSignedCertificateValidityDays, String keystorePassword, 
 			String signatureAlgorithm, ProfileRegistry profiles) {
-		super(keystore, keyAlgorithm, keyBits, keystorePassword, signatureAlgorithm, profiles);
+		super(database, keyAlgorithm, keyBits, keystorePassword, signatureAlgorithm, profiles);
 		this.selfSignedCertificateValidityDays = selfSignedCertificateValidityDays;
-	}
-	/* (non-Javadoc)
-	 * @see me.it_result.ca.CAClient#destroy()
-	 */
-	@Override
-	public synchronized void destroy() {
-		new File(keystore).delete();
 	}
 
 	/* (non-Javadoc)
@@ -83,16 +74,11 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 	 */
 	@Override
 	public synchronized boolean isInitialized() {
-		InputStream is = null;
 		try {
-			is = new FileInputStream(keystore);
-			KeyStore keyStore = KeyStore.getInstance("JKS");
-			keyStore.load(is, keystorePassword.toCharArray());
+			KeyStore keyStore = loadKeystore();
 			return keyStore.containsAlias(CA_ALIAS) && keyStore.isCertificateEntry(CA_ALIAS);
 		} catch (Exception e) {
 			return false;
-		} finally {
-			try { is.close(); } catch (Exception e) {}
 		}
 	}
 

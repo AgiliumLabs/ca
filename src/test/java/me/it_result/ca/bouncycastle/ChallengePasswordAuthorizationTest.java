@@ -20,13 +20,13 @@ import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
 import me.it_result.ca.AuthorizationOutcome;
+import me.it_result.ca.db.Database;
+import me.it_result.ca.db.FileDatabase;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.util.encoders.Base64;
@@ -50,18 +50,22 @@ public class ChallengePasswordAuthorizationTest {
 
 	@BeforeMethod
 	public void setUp() throws Exception {
-		authz = new ChallengePasswordAuthorization(PASSWORD_DB);
+		authz = new ChallengePasswordAuthorization(getDatabase());
 		signedCertificate = readCertificate("MIICCzCCAXSgAwIBAgIBAjANBgkqhkiG9w0BAQ0FADANMQswCQYDVQQDDAJDQTAgFw0xMDExMjgxNDUwMDVaGA8yMTEwMTEwNDE0NTAwNVowETEPMA0GA1UEAwwGY2xpZW50MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCdfmXsFDt8ZtOmFlKnEa3SWkkijHqcLqLLjO6VKheTcsKYVelMO6Pn9IpS4BDVTjbLNQ9x614HUyAeQFeWJSTFeAuOiubGcVLxnjGErmvLqnuojovg46tnBjzerK6D05FfN64MeCc92FYhpQos4n+CEhGoRxecFIzuQACsGKJI/QIDAQABo3UwczAOBgNVHQ8BAf8EBAMCBaAwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQU8eCNRBSV6c2sFCokS5k09VVXGp0wHwYDVR0jBBgwFoAUdA2ASswyfseSnGAKIRK/+1Pe4jkwEwYDVR0lBAwwCgYIKwYBBQUHAwIwDQYJKoZIhvcNAQENBQADgYEAWHtgVYAX9TizU9MnNrQZwOpOqEeaB6Sb60kQRrso5XB/t5SYeKN0P3ciFuzPA56whwnSIIFHjXNT55YRCYK/sii37EfDWqCkcNgIo+s3jwIijLRtNK0y3HMzcjwfk1U+8Kjqcf3qYbjg0sBEqminm/WvUMYgLZlrJjuhwfmuHPM=");
 		csr = readCsr("MIIBijCB9AIBADARMQ8wDQYDVQQDDAZjbGllbnQwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJ1+ZewUO3xm06YWUqcRrdJaSSKMepwuosuM7pUqF5NywphV6Uw7o+f0ilLgENVONss1D3HrXgdTIB5AV5YlJMV4C46K5sZxUvGeMYSua8uqe6iOi+Djq2cGPN6sroPTkV83rgx4Jz3YViGlCizif4ISEahHF5wUjO5AAKwYokj9AgMBAAGgOjAWBgkqhkiG9w0BCQcxCRMHY29ycmVjdDAgBgkqhkiG9w0BCQMxExMRQ2xpZW50Q2VydGlmaWNhdGUwDQYJKoZIhvcNAQENBQADgYEAZf+j1YH6col9sp13psNe2kbyCqilJIk7aMH6NEjGUqtNd5jJFkQScU6eGKR3K2YF/niImN15BtnK8mXWNAnwnjQZP/vqoQSK0Vy+JJBO+xl/r74iqSKdQ8PP5rk1VVpqdjxYy3Se4elJusYFJUytG5rEVIs79FlpDVpCGZj3MCQ=");
 	}
 	
+	private Database getDatabase() {
+		return new FileDatabase(PASSWORD_DB);
+	}
+
 	@AfterMethod
-	public void tearDown() {
-		new File(PASSWORD_DB).delete();
+	public void tearDown() throws Exception {
+		getDatabase().destroy();
 	}
 
 	@Test
-	public void testGeneratePassword() throws IOException {
+	public void testGeneratePassword() throws Exception {
 		int lengthInBytes = 16;
 		String password = authz.generatePassword(SUBJECT, lengthInBytes);
 		assertNotNull(password);

@@ -16,12 +16,11 @@
  */
 package me.it_result.ca.bouncycastle;
 
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -38,6 +37,9 @@ import java.security.cert.CertificateParsingException;
 import java.util.Calendar;
 import java.util.Date;
 
+import me.it_result.ca.CAException;
+import me.it_result.ca.db.Database;
+
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.X509Extensions;
 import org.bouncycastle.jce.X509KeyUsage;
@@ -53,8 +55,9 @@ import org.bouncycastle.x509.extension.SubjectKeyIdentifierStructure;
 public abstract class BouncyCABase {
 
 	static final String CA_ALIAS = "CA";
+	static final String KEYSTORE_PROPERTY = BouncyCABase.class.getName() + ".keystore";
 	
-	protected String keystore;
+	protected Database database;
 	protected String keyAlgorithm;
 	protected int keyBits;
 	protected String keystorePassword;
@@ -67,11 +70,11 @@ public abstract class BouncyCABase {
 		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 	}
 	
-	public BouncyCABase(String keystore, String keyAlgorithm, int keyBits,
+	public BouncyCABase(Database database, String keyAlgorithm, int keyBits,
 			String keystorePassword, String signatureAlgorithm, 
 			ProfileRegistry profiles) {
 		super();
-		this.keystore = keystore;
+		this.database = database;
 		this.keyAlgorithm = keyAlgorithm;
 		this.keyBits = keyBits;
 		this.keystorePassword = keystorePassword;
@@ -79,15 +82,11 @@ public abstract class BouncyCABase {
 		this.profiles = profiles;
 	}
 
-	protected void saveKeystore(KeyStore keyStore) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
-		OutputStream os = new FileOutputStream(keystore);
-		try {
-			keyStore.store(os, keystorePassword.toCharArray());
-			os.flush();
-			os.close();
-		} finally {
-			try { os.close(); } catch (Exception e) {}
-		}
+	protected void saveKeystore(KeyStore keyStore) throws Exception {
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		keyStore.store(os, keystorePassword.toCharArray());
+		byte[] data = os.toByteArray();
+		database.writeBytes(CA_ALIAS, KEYSTORE_PROPERTY, data);
 	}
 
 	protected KeyPair generateKeyPair() throws NoSuchAlgorithmException {
@@ -126,7 +125,9 @@ public abstract class BouncyCABase {
 		KeyStore keyStore = KeyStore.getInstance("JKS");
 		InputStream is = null;
 		try {
-			is = new FileInputStream(keystore);
+			byte[] data = database.readBytes(CA_ALIAS, KEYSTORE_PROPERTY);
+			if (data != null)
+				is = new ByteArrayInputStream(data);
 			keyStore.load(is, keystorePassword.toCharArray());
 		} catch (Exception e) {
 			keyStore.load(null, keystorePassword.toCharArray());			
@@ -136,4 +137,12 @@ public abstract class BouncyCABase {
 		return keyStore;
 	}
 	
+	public synchronized void destroy() throws CAException {
+		try {
+			database.destroy();
+		} catch (Exception e) {
+			throw new CAException(e);
+		}
+	}
+
 }

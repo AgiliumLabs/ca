@@ -41,12 +41,13 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Collections;
 
-import me.it_result.ca.bouncycastle.BouncyCA;
-import me.it_result.ca.bouncycastle.BouncyCAClient;
-import me.it_result.ca.bouncycastle.ProfileRegistry;
 import me.it_result.ca.CAClient;
 import me.it_result.ca.DuplicateSubjectException;
 import me.it_result.ca.UserCertificateParameters;
+import me.it_result.ca.bouncycastle.BouncyCA;
+import me.it_result.ca.bouncycastle.BouncyCAClient;
+import me.it_result.ca.bouncycastle.ProfileRegistry;
+import me.it_result.ca.db.FileDatabase;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.util.encoders.Base64;
@@ -232,11 +233,11 @@ public class ScepCAClientTest {
 	public static void main(String[] args) {
 		try {
 			ProfileRegistry profiles = ProfileRegistry.getDefaultInstance();
-			BouncyCA ca = new BouncyCA("target/scep.ca.keystore", "RSA", 1024, 36500, "changeit", "CN=CA", "SHA512withRSA", profiles);
+			BouncyCA ca = new BouncyCA(new FileDatabase("target/scep.ca.keystore"), "RSA", 1024, 36500, "changeit", "CN=CA", "SHA512withRSA", profiles);
 			ca.destroy();
 			ca.initialize();
 			printCertificate("CA certificate", ca.getCACertificate());
-			BouncyCAClient caClient = new BouncyCAClient("target/scep.client.keystore", "RSA", 1024, 36500, "chengeit", "SHA512withRSA", profiles);
+			BouncyCAClient caClient = new BouncyCAClient(new FileDatabase("target/scep.client.keystore"), "RSA", 1024, 36500, "chengeit", "SHA512withRSA", profiles);
 			UserCertificateParameters params = new UserCertificateParameters();
 			params.setSubjectDN(CLIENT_SUBJECT_DN);
 			byte[] csr = caClient.generateCSR(params);

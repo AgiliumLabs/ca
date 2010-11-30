@@ -29,8 +29,10 @@ public interface CA {
 	
 	/**
 	 * Cleans up the keystores and CA keypair/certificate
+	 * 
+	 * @throws CAException
 	 */
-	public void destroy();
+	public void destroy() throws CAException;
 	
 	/**
 	 * Initialized CA has a CA keypair/certificate generated.

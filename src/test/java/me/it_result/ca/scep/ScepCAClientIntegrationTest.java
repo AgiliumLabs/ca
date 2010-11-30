@@ -19,7 +19,6 @@ package me.it_result.ca.scep;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.fail;
 
-import java.io.File;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.util.Set;
@@ -32,6 +31,8 @@ import me.it_result.ca.bouncycastle.BouncyCA;
 import me.it_result.ca.bouncycastle.BouncyCAClient;
 import me.it_result.ca.bouncycastle.ChallengePasswordAuthorization;
 import me.it_result.ca.bouncycastle.ProfileRegistry;
+import me.it_result.ca.db.Database;
+import me.it_result.ca.db.FileDatabase;
 
 import org.bouncycastle.jce.X509Principal;
 import org.testng.annotations.AfterMethod;
@@ -46,8 +47,8 @@ import org.testng.annotations.Test;
  */
 public class ScepCAClientIntegrationTest {
 
-	private static final String CA_KEYSTORE = "target/scep.ca.keystore";
-	private static final String CLIENT_KEYSTORE = "target/scep.client.keystore";
+	private static final String CA_DB_LOCATION = "target/scep.ca.keystore";
+	private static final String CLIENT_DB_LOCATION = "target/scep.client.keystore";
 	private static final String KEYSTORE_PASSWORD = "changeme";
 	private static final int VALIDITY_DAYS = 365;
 	private static final String ISSUER = "CN=SCEP-CA";
@@ -64,22 +65,34 @@ public class ScepCAClientIntegrationTest {
 	@BeforeMethod
 	@Parameters({"keyAlgorithm", "keyBits", "bouncyCastleProviderSignatureAlgorithm", "jdkSignatureAlgorithm"})
 	public void setUp(@Optional("RSA") String keyAlgorithm, @Optional("1024") int keyBits, @Optional("MD5WithRSA") String signatureAlgorithm, @Optional("MD5withRSA") String jdkSignatureAlgorithm) throws Exception {
-		CA ca = new BouncyCA(CA_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
+		CA ca = new BouncyCA(getCaDatabase(), keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, ISSUER, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
 		ca.destroy();
 		ca.initialize();
-		ChallengePasswordAuthorization authorization = new ChallengePasswordAuthorization(CA_KEYSTORE + ".passwords");
+		ChallengePasswordAuthorization authorization = new ChallengePasswordAuthorization(getPasswordDatabase());
 		authorization.storePassword(SUBJECT_DN, SCEP_PASSWORD);
 		server = new ScepServer(ca, authorization, SCEP_PORT);
 		server.start();
 		scepClient = initializeScepClient(ca, keyAlgorithm, keyBits, signatureAlgorithm);
 	}
 	
+	private Database getPasswordDatabase() {
+		return new FileDatabase(CA_DB_LOCATION + ".passwords");
+	}
+
+	private Database getCaDatabase() {
+		return new FileDatabase(CA_DB_LOCATION);
+	}
+	
+	private Database getClientDatabase() {
+		return new FileDatabase(CLIENT_DB_LOCATION);
+	}
+
 	private CA getCa() {
 		return server.getCa();
 	}
 	
 	public ScepCAClient initializeScepClient(CA ca, String keyAlgorithm, int keyBits, String signatureAlgorithm) throws Exception {
-		CAClient caClient = new BouncyCAClient(CLIENT_KEYSTORE, keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
+		CAClient caClient = new BouncyCAClient(getClientDatabase(), keyAlgorithm, keyBits, VALIDITY_DAYS, KEYSTORE_PASSWORD, signatureAlgorithm, ProfileRegistry.getDefaultInstance());
 		URL scepUrl = new URL(SCEP_URL);
 		X509Certificate caCertificate = ca.getCACertificate();
 		CertificateFingerprint caFingerprint = CertificateFingerprint.calculate(caCertificate);
@@ -88,7 +101,7 @@ public class ScepCAClientIntegrationTest {
 	}
 	
 	@AfterMethod
-	public void tearDown() {
+	public void tearDown() throws Exception {
 		try {
 			server.stop();
 		} catch (Exception e) {}
@@ -97,9 +110,7 @@ public class ScepCAClientIntegrationTest {
 				getCa().destroy();
 			scepClient.getCaClient().destroy();
 		} catch (Exception e) {}
-		new File(CA_KEYSTORE).delete();
-		new File(CLIENT_KEYSTORE).delete();
-		new File(CA_KEYSTORE + ".passwords").delete();
+		getPasswordDatabase().destroy();
 		scepClient = null;
 		server = null;
 	}

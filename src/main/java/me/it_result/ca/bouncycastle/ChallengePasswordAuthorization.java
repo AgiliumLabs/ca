@@ -16,18 +16,14 @@
  */
 package me.it_result.ca.bouncycastle;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileLock;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.Properties;
+import java.sql.SQLException;
 
 import me.it_result.ca.Authorization;
 import me.it_result.ca.AuthorizationOutcome;
+import me.it_result.ca.db.Database;
 
 import org.bouncycastle.asn1.pkcs.CertificationRequest;
 import org.bouncycastle.asn1.pkcs.CertificationRequestInfo;
@@ -40,11 +36,12 @@ import org.bouncycastle.util.encoders.Hex;
  */
 public class ChallengePasswordAuthorization implements Authorization {
 	
-	private String databaseFileName;
-	private FileLock dbLock;
+	private static final String PASSWORD_PROPERTY = ChallengePasswordAuthorization.class.getName() + ".password";
 	
-	public ChallengePasswordAuthorization(String databaseFileName) {
-		this.databaseFileName = databaseFileName;
+	private Database database;
+	
+	public ChallengePasswordAuthorization(Database database) {
+		this.database = database;
 	}
 	
 	/* (non-Javadoc)
@@ -69,11 +66,11 @@ public class ChallengePasswordAuthorization implements Authorization {
 		clearPassword(alias);
 	}
 	
-	public void clearPassword(String alias) throws IOException {
+	public void clearPassword(String alias) throws Exception {
 		storePassword(alias, null);
 	}
 
-	public String generatePassword(String alias, int passwordBytes) throws IOException {
+	public String generatePassword(String alias, int passwordBytes) throws Exception {
 		SecureRandom rnd = new SecureRandom();
 		byte[] password = new byte[passwordBytes];
 		rnd.nextBytes(password);
@@ -83,75 +80,24 @@ public class ChallengePasswordAuthorization implements Authorization {
 		return result;
 	}
 	
-	public void storePassword(String alias, String password) throws IOException {
+	public void storePassword(String alias, String password) throws Exception {
 		try {
-			lockDatabase();
-			Properties db = readDatabase();
 			if (password != null)
-				db.setProperty(alias, password);
+				database.writeString(alias, PASSWORD_PROPERTY, password);
 			else
-				db.remove(alias);
-			writeDatabase(db);
-		} finally {
-			unlockDatabase();
+				database.removeProperty(alias, PASSWORD_PROPERTY);
+		} catch (SQLException e) {
+			throw new IOException(e);
 		}
 	}
 	
-	private void unlockDatabase() {
-		if (dbLock != null) {
-			try { dbLock.release(); } catch (Exception e) {}
-			try { dbLock.channel().close(); } catch (Exception e) {}
-			dbLock = null;
-		}
-	}
-
-	private void lockDatabase() throws IOException {
-		File databaseFile = new File(databaseFileName);
-		if (databaseFile.exists()) {
-			dbLock = new RandomAccessFile(databaseFileName, "rw").
-				getChannel().
-				lock();
-		}
-	}
-
-	private String readPassword(String alias) throws IOException {
+	private String readPassword(String alias) throws Exception {
 		try {
-			lockDatabase();
-			Properties db = readDatabase();
-			String password = db.getProperty(alias);
+			String password = database.readString(alias, PASSWORD_PROPERTY);
 			return password;
-		} finally {
-			unlockDatabase();
+		} catch (SQLException e) {
+			throw new IOException(e);
 		}
 	}
 	
-	private Properties readDatabase() throws IOException {
-		File databaseFile = new File(databaseFileName);
-		if (databaseFile.exists()) {
-			FileInputStream fis = null;
-			try {
-				fis = new FileInputStream(databaseFile);
-				Properties db = new Properties();
-				db.load(fis);
-				return db;
-			} finally {
-				if (fis != null)
-					try { fis.close(); } catch (Exception e) {}
-			}
-		}
-		else 
-			return new Properties();
-	}
-	
-	private void writeDatabase(Properties db) throws IOException {
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(databaseFileName);
-			db.store(fos, null);
-		} finally {
-			if (fos != null)
-				try { fos.close(); } catch (Exception e) {}
-		}
-	}
-
 }
