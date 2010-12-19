@@ -16,16 +16,12 @@
  */
 package me.it_result.ca.scep;
 
-import java.io.IOException;
 import java.net.URL;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
-import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.UnsupportedCallbackException;
 
-import org.jscep.CertificateVerificationCallback;
 import org.jscep.client.Client;
 
 /**
@@ -45,9 +41,10 @@ public class JScepClientBuilder {
 		return this;
 	}
 	
-	public void identity(X509Certificate client, PrivateKey privateKey) {
+	public JScepClientBuilder identity(X509Certificate client, PrivateKey privateKey) {
 		this.client = client;
 		this.privateKey = privateKey;
+		return this;
 	}
 	
 	public JScepClientBuilder url(URL url) {
@@ -60,33 +57,17 @@ public class JScepClientBuilder {
 	}
 
 	public JScepClientBuilder caFingerprint(CertificateFingerprint caCertificateFingerprint) {
-		this.callbackHandler = new CaFingerprintCallbackHandler(caCertificateFingerprint);
+		if (callbackHandler instanceof CaFingerprintCallbackHandler) {
+			CaFingerprintCallbackHandler fingerprintCallbackHandler = (CaFingerprintCallbackHandler) callbackHandler;
+			fingerprintCallbackHandler.addFingerprint(caCertificateFingerprint);
+		} else 
+			this.callbackHandler = new CaFingerprintCallbackHandler(caCertificateFingerprint);
 		return this;
 	}
 	
-	public static class CaFingerprintCallbackHandler implements CallbackHandler {
-
-		private CertificateFingerprint fingerprint;
-		
-		public CaFingerprintCallbackHandler(CertificateFingerprint fingerprint) {
-			this.fingerprint = fingerprint;
-		}
-
-		@Override
-		public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-			for (int i = 0; i < callbacks.length; i++) {
-				if (callbacks[i] instanceof CertificateVerificationCallback) {
-					final CertificateVerificationCallback callback = (CertificateVerificationCallback) callbacks[i];
-					try {
-						CertificateFingerprint actualFingerprint = CertificateFingerprint.calculate(callback.getCertificate());
-						callback.setVerified(fingerprint.equals(actualFingerprint));
-					} catch (Exception e) {
-						throw new IOException(e);
-					}
-				}
-			}
-		}		
-		
+	public JScepClientBuilder callbackHandler(CallbackHandler callbackHandler) {
+		this.callbackHandler = callbackHandler;
+		return this;
 	}
 	
 }

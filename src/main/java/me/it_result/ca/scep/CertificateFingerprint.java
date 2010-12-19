@@ -43,10 +43,14 @@ public class CertificateFingerprint {
 	}
 
 	public static CertificateFingerprint calculate(X509Certificate certificate) throws CertificateEncodingException, NoSuchAlgorithmException {
+		return calculate(certificate, "SHA-512");
+	}
+	
+	public static CertificateFingerprint calculate(X509Certificate certificate, String digestAlgorithm) throws CertificateEncodingException, NoSuchAlgorithmException {
 		byte[] encoded = certificate.getEncoded();
-		MessageDigest digest = MessageDigest.getInstance("SHA-512");
-		byte[] sha512 = digest.digest(encoded);
-		return new CertificateFingerprint(sha512, "SHA-512");
+		MessageDigest digest = MessageDigest.getInstance(digestAlgorithm);
+		byte[] fingerprint = digest.digest(encoded);
+		return new CertificateFingerprint(fingerprint, digestAlgorithm);
 	}
 
 	/**
