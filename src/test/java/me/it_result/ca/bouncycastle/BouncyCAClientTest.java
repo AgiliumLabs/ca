@@ -129,5 +129,10 @@ public class BouncyCAClientTest extends CAClientTest {
 			containsSKI().
 			noMoreExtensions();
 	}
+
+	@Override
+	protected String keyStorePassword() {
+		return KEYSTORE_PASSWORD;
+	}
 	
 }

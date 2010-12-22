@@ -202,4 +202,23 @@ public class BouncyCAClient extends BouncyCABase implements CAClient {
 		}
 	}
 
+	@Override
+	public KeyStore getKeyStore() throws CAException {
+		try {
+			return loadKeystore();
+		} catch (Exception e) {
+			throw new CAException(e);
+		}
+	}
+
+	@Override
+	public KeyStore getTrustStore() throws NotInitializedException, CAException {
+		ensureInitialized();
+		try {
+			return loadKeystore();
+		} catch (Exception e) {
+			throw new CAException(e);
+		}
+	}
+
 }

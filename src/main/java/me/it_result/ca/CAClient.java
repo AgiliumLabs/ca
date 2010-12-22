@@ -17,6 +17,7 @@
 package me.it_result.ca;
 
 import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 
 /**
@@ -118,5 +119,27 @@ public interface CAClient {
 	 * @throws CAException
 	 */
 	public void storeCertificate(X509Certificate certificate) throws NotInitializedException, InvalidCertificateKeyException, InvalidCAException, CAException;
+	
+	/**
+	 * Returns a KeyStore instance. The instance contains all key/certificate pairs
+	 * issued to this client and can be used for establishing SSL connections.
+	 * 
+	 * @return a keystore
+	 * 
+	 * @throws CAException
+	 */
+	public KeyStore getKeyStore() throws CAException;
+
+	/**
+	 * Returns a Keystore instance. The instance contains the CA certificate in a
+	 * TrustedCertificateEntry and can be used for establishing SSL connections.
+	 * 
+	 * @return a truststore
+	 * 
+	 * @throws NotInitializedException in case the CA certificate is not 
+	 * assigned yet to this client
+	 * @throws CAException
+	 */
+	public KeyStore getTrustStore() throws NotInitializedException, CAException;
 	
 }

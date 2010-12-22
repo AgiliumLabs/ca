@@ -22,10 +22,17 @@ import static org.testng.AssertJUnit.assertTrue;
 import static org.testng.AssertJUnit.fail;
 
 import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.KeyStore.PrivateKeyEntry;
+import java.security.KeyStore.TrustedCertificateEntry;
 import java.security.cert.X509Certificate;
+import java.util.Enumeration;
 
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.testng.annotations.Test;
+
+import static org.testng.AssertJUnit.*;
 
 /**
  * @author roman
@@ -189,7 +196,67 @@ public abstract class CAClientTest {
 		}
 	}
 	
+	@Test
+	public void testGetTrustStore() throws Exception {
+		// Given client is initialized with CA certificate
+		client().initialize(ca().getCACertificate());
+		// When a getTrustStore method is invoked
+		KeyStore truststore = client().getTrustStore();
+		// Then a KeyStore instance is returned
+		assertNotNull(truststore);
+		// And the returned truststore contains CA certificate in a TrustedCertificateEntry
+		int trustedCertificates = 0;
+		Enumeration<String> aliases = truststore.aliases();
+		while (aliases.hasMoreElements()) {
+			String alias = aliases.nextElement();
+			if (truststore.entryInstanceOf(alias, TrustedCertificateEntry.class)) {
+				trustedCertificates++;
+				X509Certificate cert = (X509Certificate) truststore.getCertificate(alias);
+				assertEquals(ca().getCACertificate(), cert);
+			}
+		}
+		// And it is the only TrustedCertificateEntry
+		assertEquals(1, trustedCertificates);
+	}
+	
+	@Test
+	public void testGetTrustStoreNotInitialized() throws Exception {
+		// Given client is not initialized with CA certificate
+		assertFalse(client().isInitialized());
+		// When a getTrustStore method is invoked 
+		try {
+			client().getTrustStore();
+			fail("NotInitializedException expected");
+		} catch (NotInitializedException e) {
+			// Then CANotInitializedException is thrown
+		}
+	}
+	
+	@Test
+	public void getKeyStore() throws Exception {
+		// Given client have generated a keypair and certificate
+		client().generateCSR(CERT_PARAMS);
+		// When getKeyStore method is invoked
+		KeyStore keystore = client().getKeyStore();
+		// A KeyStore instance is returned 
+		assertNotNull(keystore);
+		// And the keystore contains a PrivateKeyEntry corresponding to the keypair
+		boolean keyPresent = true;
+		Enumeration<String> aliases = keystore.aliases();
+		while (aliases.hasMoreElements()) {
+			String alias = aliases.nextElement();
+			if (keystore.entryInstanceOf(alias, PrivateKeyEntry.class)) {
+				X509Certificate cert = (X509Certificate) keystore.getCertificate(alias);
+				assertEquals(client().getCertificate(SUBJECT_NAME), cert);
+				PrivateKey privateKey = (PrivateKey) keystore.getKey(alias, keyStorePassword().toCharArray());
+				assertEquals(client().getKeypair(SUBJECT_NAME).getPrivate(), privateKey);
+			}
+		}
+		assertTrue(keyPresent);
+	}
+	
 	protected abstract CAClient client();
 	protected abstract CA ca();
+	protected abstract String keyStorePassword();
 			
 }
